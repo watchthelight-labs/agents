@@ -1,0 +1,23 @@
+# <wtl> project: agents | file: .github/workflows/check.yml | author: watchthelight </wtl>
+# Every push and pull request: no secrets or personal identifiers, every Python file compiles, the installer runs.
+name: check
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: secret and identity scan
+        run: python3 tools/scan.py
+      - name: python compiles
+        run: python3 -m compileall -q install tools claude mcp-server/src
+      - name: installer into a scratch home
+        run: |
+          python3 install/install.py --home "$RUNNER_TEMP/home" > /dev/null
+          python3 install/install.py --home "$RUNNER_TEMP/home" | tail -1
+          test -f "$RUNNER_TEMP/home/.claude/settings.json"
