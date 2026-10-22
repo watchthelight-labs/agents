@@ -45,21 +45,39 @@
  "project_skills": {
   "root": "C:/Users/Hackintosh",
   "skill_dirs": {
-   "tooling/claude-skills/legion-check": "claude/skills/legion-check",
-   "tooling/claude-skills/upstream-scout": "claude/skills/upstream-scout",
    "skills/legion-boot-screen": "claude-web/skills/legion-boot-screen"
-  }
+  },
+  "note": "legion-check and upstream-scout are edited here, in claude/skills, and nowhere else"
  },
  "mcp_server": {
   "root": "~/Projects/memory-mcp",
   "dst": "mcp-server",
   "git_tracked_only": true,
-  "skip": ["README.md"],
+  "skip": [
+   "README.md"
+  ],
   "replace": [
-   ["mcp.watchthelight.org", "mcp.example.org"],
-   ["claude.watchthelight.org", "dash.example.org"],
-   ["watchthelight.org", "example.org"]
+   [
+    "mcp.watchthelight.org",
+    "mcp.example.org"
+   ],
+   [
+    "claude.watchthelight.org",
+    "dash.example.org"
+   ],
+   [
+    "watchthelight.org",
+    "example.org"
+   ]
   ]
  },
- "exclude": ["__pycache__", "*.pyc", "*.bak", "*.bak*", "*.original.md", ".graphify_version", ".DS_Store"]
+ "exclude": [
+  "__pycache__",
+  "*.pyc",
+  "*.bak",
+  "*.bak*",
+  "*.original.md",
+  ".graphify_version",
+  ".DS_Store"
+ ]
 }
