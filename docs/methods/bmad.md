@@ -24,10 +24,6 @@ The brief becomes a numbered series of phase prompts in the project, `plan/00-be
 
 Smaller projects use one bootstrap prompt with lettered checkpoints (A to F) instead of separate files.
 
-## Why it works
-
-- The interrogation is cheap compared to building the wrong thing.
-- Gates make "done" something the agent has to prove, not claim.
-- Fresh sessions per phase keep the quality of the last phase as high as the first.
+The interrogation costs far less than building the wrong thing. With a gate at the end of each phase the agent has to prove it's done, and a fresh session per phase keeps the last phase as good as the first.
 
 The memory server keeps the brief, each gate's result and every open question, so any session (or any device) can pick the project up where it stopped.

@@ -1,7 +1,7 @@
 <!-- <wtl> project: agents | file: docs/upstream.md | author: watchthelight </wtl> -->
 # Keeping up with related projects
 
-The projects ours build on, or that attack the same hardware, move fast. Three layers make sure none of it gets past me.
+The projects ours build on, and the ones working on the same hardware, move fast. I follow them in three layers.
 
 ## 1. Discord feed, live
 

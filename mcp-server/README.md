@@ -20,10 +20,10 @@ browser ──Cloudflare Access──► nginx ──► dashboard SPA + /api   
 inbox (scp) ──► memory-mcp-import.timer (every 2 min)       memory-mcp-backup.timer (daily)
 ```
 
-- **Auth for Claude Code:** a static Bearer token (`MEMORY_TOKEN`).
-- **Auth for claude.ai and ChatGPT:** OAuth through the SDK: dynamic client registration, PKCE, a consent page with CSRF protection, a scrypt-hashed owner password, rate-limited sign-in, one-hour access tokens, rotating 30-day refresh tokens. Notes marked private never reach OAuth clients.
-- **Dashboard:** a React app plus a small JSON API, reachable only through Cloudflare Access. The API checks the Access JWT itself, and the Origin header on writes.
-- **systemd hardening:** its own system user, `ProtectSystem=strict`, `ProtectHome`, `NoNewPrivileges`, a memory cap, and write access only to the data folder.
+- Claude Code authenticates with a static Bearer token (`MEMORY_TOKEN`).
+- claude.ai and ChatGPT use OAuth through the SDK: dynamic client registration, PKCE, a consent page with CSRF protection, a scrypt-hashed owner password, rate-limited sign-in, one-hour access tokens, rotating 30-day refresh tokens. Notes marked private never reach OAuth clients.
+- The dashboard is a React app plus a small JSON API, reachable only through Cloudflare Access. The API checks the Access JWT itself, and the Origin header on writes.
+- systemd hardening: its own system user, `ProtectSystem=strict`, `ProtectHome`, `NoNewPrivileges`, a memory cap, and write access only to the data folder.
 
 ## Tools
 
@@ -56,7 +56,7 @@ You need a Linux server with a public address (any small VPS), a domain, Python 
 6. **Check it.** Run `ops/verify-remote.py` (health and tools), `ops/verify-oauth.py` (the whole OAuth flow) and `ops/verify-browser-login.py`.
 7. **Connect clients.**
    - **Claude Code:** `claude mcp add --scope user --transport http watchthelight https://mcp.example.org/mcp --header "Authorization: Bearer <MEMORY_TOKEN>"`. `ops/configure-claude-code.py` does the same.
-   - **claude.ai:** Settings → Connectors → Add custom connector, URL `https://mcp.example.org/mcp`, sign in once.
+   - **claude.ai:** Settings > Connectors > Add custom connector, URL `https://mcp.example.org/mcp`, sign in once.
    - **ChatGPT:** the same URL as a custom connector.
 8. **Feed it.** Drop `.md`, `.txt`, `.json`, `.jsonl` or `.csv` files in an inbox folder, and `ops/sync-inbox.py` uploads only new or changed ones over SSH. The import timer indexes them within two minutes. `ops/import-credentials.py` loads a credentials file into the vault.
 

@@ -1,7 +1,7 @@
 <!-- <wtl> project: agents | file: claude-web/README.md | author: watchthelight </wtl> -->
 # Skills for claude.ai
 
-These run in Claude on the web and on the phone, not in Claude Code. To install one: zip its folder (the zip must contain the folder with `SKILL.md` at its top), then upload it in claude.ai under Settings → Capabilities → Skills.
+These run in Claude on the web and on the phone, not in Claude Code. To install one: zip its folder (the zip must contain the folder with `SKILL.md` at its top), then upload it in claude.ai under Settings > Capabilities > Skills.
 
 They expect the watchthelight memory server to be connected as a custom connector (see [mcp-server](../mcp-server)), because that's where they leave their results for Claude Code to pick up.
 

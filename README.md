@@ -1,18 +1,18 @@
 <!-- <wtl> project: agents | file: README.md | author: watchthelight </wtl> -->
 # agents
 
-How I work with AI agents, and everything that makes it work: the Claude Code skills and hooks I use every day, the memory server they all share, how my phone and both sides of my laptop stay in sync, the two USB sticks behind the Hackintosh work, how I keep up with related projects, and the two working methods (caveman and BMAD) that shape every session.
+How I work with AI agents: the Claude Code skills and hooks I use every day, the memory server they all share, how my phone and both sides of my laptop stay in sync, the two USB sticks I use for the Hackintosh work, how I keep up with related projects, and the two working methods (caveman and BMAD) I use in every session.
 
-It's also the install source. A new machine (or a fresh macOS login) gets the whole setup with:
+This repo is also what I install from. A new machine (or a fresh macOS login) gets the whole setup with:
 
 ```sh
 git clone https://github.com/watchthelight-labs/agents ~/src/agents
 python3 ~/src/agents/install/install.py          # python on Windows
 ```
 
-then the three secrets by hand ([docs/new-machine.md](docs/new-machine.md)). Or just tell Claude Code "set up from watchthelight-labs/agents".
+then the three secrets by hand ([docs/new-machine.md](docs/new-machine.md)). Or tell Claude Code "set up from watchthelight-labs/agents".
 
-## The setup at a glance
+## How the devices connect
 
 ```
  iPhone ─── photos, Claude web ──► watchthelight memory ◄── every Claude Code session (boot hook)
