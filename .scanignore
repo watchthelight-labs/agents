@@ -1,0 +1,4 @@
+# Files tools/scan.py skips: fake values in test fixtures, vendored third-party code, and the scanner itself.
+mcp-server/tests/*
+claude/skills/whatif/assets/*
+tools/scan.py

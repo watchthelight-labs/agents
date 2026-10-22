@@ -1,0 +1,65 @@
+{
+ "about": "What install/collect.py publishes from Bash's machines into this repo. Only listed items are copied; every copied text file then goes through the replacements and tools/scan.py. Edit this file, not the copies.",
+ "private_replacements": "~/.config/agents/private.json (home paths, the owner's e-mail, the server address and host alias; kept out of this repo)",
+ "claude": {
+  "root": "~/.claude",
+  "files": {
+   "hooks/audit.py": "claude/hooks/audit.py",
+   "hooks/caveman-activate.js": "claude/hooks/caveman-activate.js",
+   "hooks/caveman-mode-tracker.js": "claude/hooks/caveman-mode-tracker.js",
+   "hooks/cchooks.py": "claude/hooks/cchooks.py",
+   "hooks/cmdlog.py": "claude/hooks/cmdlog.py",
+   "hooks/compact_guard.py": "claude/hooks/compact_guard.py",
+   "hooks/guardrails.py": "claude/hooks/guardrails.py",
+   "hooks/notify.py": "claude/hooks/notify.py",
+   "hooks/quota.py": "claude/hooks/quota.py",
+   "hooks/quota_advisory.py": "claude/hooks/quota_advisory.py",
+   "hooks/turn_end.py": "claude/hooks/turn_end.py",
+   "hooks/wtl_boot.py": "claude/hooks/wtl_boot.py",
+   "hooks/wtl_nudge.py": "claude/hooks/wtl_nudge.py",
+   "guardrails.json": "claude/guardrails.json",
+   "statusline.py": "claude/statusline/statusline.py",
+   "themes/trestle.json": "claude/themes/trestle.json",
+   "commands/humanize.md": "claude/commands/humanize.md"
+  },
+  "skill_dirs": {
+   "skills/caveman": "claude/skills/caveman",
+   "skills/caveman-commit": "claude/skills/caveman-commit",
+   "skills/caveman-compress": "claude/skills/caveman-compress",
+   "skills/caveman-review": "claude/skills/caveman-review",
+   "skills/cmdlog": "claude/skills/cmdlog",
+   "skills/quota": "claude/skills/quota",
+   "skills/deepsearch": "claude/skills/deepsearch",
+   "skills/supersearch": "claude/skills/supersearch",
+   "skills/deepstorm": "claude/skills/deepstorm",
+   "skills/memory-add": "claude/skills/memory-add",
+   "skills/memory-cred": "claude/skills/memory-cred",
+   "skills/memory-remove": "claude/skills/memory-remove",
+   "skills/whatif": "claude/skills/whatif",
+   "commands/decompile": "claude/skills/decompile"
+  },
+  "synced_skills": {
+   "humanize": "claude/skills/humanize"
+  }
+ },
+ "project_skills": {
+  "root": "C:/Users/Hackintosh",
+  "skill_dirs": {
+   "tooling/claude-skills/legion-check": "claude/skills/legion-check",
+   "tooling/claude-skills/upstream-scout": "claude/skills/upstream-scout",
+   "skills/legion-boot-screen": "claude-web/skills/legion-boot-screen"
+  }
+ },
+ "mcp_server": {
+  "root": "~/Projects/memory-mcp",
+  "dst": "mcp-server",
+  "git_tracked_only": true,
+  "skip": ["README.md"],
+  "replace": [
+   ["mcp.watchthelight.org", "mcp.example.org"],
+   ["claude.watchthelight.org", "dash.example.org"],
+   ["watchthelight.org", "example.org"]
+  ]
+ },
+ "exclude": ["__pycache__", "*.pyc", "*.bak", "*.bak*", "*.original.md", ".graphify_version", ".DS_Store"]
+}
