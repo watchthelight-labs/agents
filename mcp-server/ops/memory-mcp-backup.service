@@ -1,0 +1,18 @@
+[Unit]
+Description=Back up the private memory database
+
+[Service]
+Type=oneshot
+User=memory-mcp
+Group=memory-mcp
+Environment=MEMORY_DATA=/srv/memory-mcp/data
+ExecStart=/srv/memory-mcp/venv/bin/python /srv/memory-mcp/app/ops/backup.py
+ExecStartPost=/srv/memory-mcp/venv/bin/memory-mcp optimize
+UMask=0077
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/memory-mcp/data

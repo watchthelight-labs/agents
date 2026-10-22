@@ -1,0 +1,10 @@
+[Unit]
+Description=Check the memory inbox every two minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=2min
+Unit=memory-mcp-import.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,19 @@
+[Unit]
+Description=Index new memory inbox files
+
+[Service]
+Type=oneshot
+User=memory-mcp
+Group=memory-mcp
+Environment=MEMORY_DATA=/srv/memory-mcp/data
+EnvironmentFile=/etc/memory-mcp.env
+ExecStart=/srv/memory-mcp/venv/bin/memory-mcp import /srv/memory-mcp/inbox --namespace inbox
+Nice=10
+IOSchedulingClass=idle
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/memory-mcp/data
+MemoryMax=1500M

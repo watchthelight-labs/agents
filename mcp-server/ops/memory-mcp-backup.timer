@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily private memory database snapshot
+
+[Timer]
+OnCalendar=*-*-* 05:00:00 UTC
+Persistent=true
+Unit=memory-mcp-backup.service
+
+[Install]
+WantedBy=timers.target

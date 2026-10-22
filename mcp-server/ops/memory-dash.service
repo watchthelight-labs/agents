@@ -1,0 +1,24 @@
+[Unit]
+Description=watchthelight dashboard API (dash.example.org)
+After=network.target
+
+[Service]
+User=memory-mcp
+Group=memory-mcp
+WorkingDirectory=/srv/memory-mcp/app
+EnvironmentFile=/etc/memory-dash.env
+ExecStart=/srv/memory-mcp/venv/bin/memory-mcp dash --port 8092
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/memory-mcp/data
+MemoryMax=600M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

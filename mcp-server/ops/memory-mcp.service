@@ -1,0 +1,24 @@
+[Unit]
+Description=Bash private memory MCP
+After=network.target
+
+[Service]
+User=memory-mcp
+Group=memory-mcp
+WorkingDirectory=/srv/memory-mcp/app
+EnvironmentFile=/etc/memory-mcp.env
+ExecStart=/srv/memory-mcp/venv/bin/memory-mcp serve
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/memory-mcp/data
+MemoryMax=1500M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
