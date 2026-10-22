@@ -1,8 +1,6 @@
 <!-- <wtl> project: agents | file: README.md | author: watchthelight </wtl> -->
 # agents
 
-> **Heads up:** a good portion of this code is AI generated. I do understand how it works, and I'm happy to explain any of it. If something looks wrong or you have a question, open an issue or ping me on Discord (`watchthelight`).
-
 How I work with AI agents, and everything that makes it work: the Claude Code skills and hooks I use every day, the memory server they all share, how my phone and both sides of my laptop stay in sync, the two USB sticks behind the Hackintosh work, how I keep up with related projects, and the two working methods (caveman and BMAD) that shape every session.
 
 It's also the install source. A new machine (or a fresh macOS login) gets the whole setup with:
