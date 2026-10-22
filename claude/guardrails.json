@@ -1,0 +1,66 @@
+{
+  "_doc": [
+    "PreToolUse guardrails, evaluated by ~/.claude/hooks/guardrails.py.",
+    "subject = the command (Bash/PowerShell) or the file_path (Write/Edit/MultiEdit/NotebookEdit).",
+    "pattern / unless / cwd are case-insensitive regexes; unless is tested against subject + cwd.",
+    "action: deny = Claude must ask you in chat first (works in every permission mode); ask = permission prompt.",
+    "check: {cmd, deny_if_exit, timeout} runs a shell probe; the rule fires only when the exit code matches,",
+    "so a 'players online' script can gate a rule. enabled:false parks a rule."
+  ],
+  "default_action": "deny",
+  "rules": [
+    {
+      "name": "mc-stop-restart",
+      "tools": ["Bash", "PowerShell"],
+      "pattern": "mcrun2?(\\.py)?\\b[^|;&]*\\b(stop|restart|kill|shutdown)\\b|\\b(stop|restart|kill)\\b[^|;&]*\\bmcrun2?\\b|\\bpower\\s+(stop|restart|kill)\\b|\"signal\"\\s*:\\s*\"(stop|restart|kill)\"",
+      "reason": "Minecraft server stop/restart: people may be playing (memory: never restart without asking).",
+      "check": null
+    },
+    {
+      "name": "mc-command-feedback",
+      "tools": ["Bash", "PowerShell"],
+      "pattern": "sendCommandFeedback\\s+true",
+      "reason": "Keep sendCommandFeedback false on the server (the user hates [Server:] spam)."
+    },
+    {
+      "name": "git-force-push",
+      "tools": ["Bash", "PowerShell"],
+      "pattern": "\\bgit\\b[^|;&]*\\bpush\\b[^|;&]*(\\s--force\\b|\\s-f\\b|\\s--force-with-lease\\b)",
+      "reason": "Force push rewrites remote history."
+    },
+    {
+      "name": "recursive-delete",
+      "tools": ["Bash", "PowerShell"],
+      "pattern": "\\brm\\s+(-[a-z]*r[a-z]*f|-[a-z]*f[a-z]*r|-r\\s+-f|-f\\s+-r)\\b|\\bRemove-Item\\b[^|;]*-Recurse[^|;]*-Force|\\bRemove-Item\\b[^|;]*-Force[^|;]*-Recurse|\\brmdir\\s+/s\\b|\\brd\\s+/s\\b",
+      "unless": "AppData[\\\\/]Local[\\\\/]Temp[\\\\/]claude|\\$TMPDIR|\\$env:TEMP|\\$LOCALAPPDATA/Temp/claude|(^|\\s)/tmp/",
+      "reason": "Recursive delete outside the scratchpad: confirm the exact target with the user."
+    },
+    {
+      "name": "secretless-deploy",
+      "tools": ["Bash", "PowerShell"],
+      "pattern": "\\bwrangler\\b[^|;&]*\\b(deploy|publish|delete)\\b",
+      "cwd": "secretless",
+      "reason": "secretless.net is intentionally blanked (2026-08-09); deploying changes its routes."
+    },
+    {
+      "name": "secretless-deploy-cmd",
+      "tools": ["Bash", "PowerShell"],
+      "pattern": "\\bwrangler\\b[^|;&]*\\b(deploy|publish|delete)\\b[^|;&]*secretless|secretless[^|;&]*\\bwrangler\\b[^|;&]*\\b(deploy|publish|delete)\\b",
+      "reason": "secretless.net is intentionally blanked (2026-08-09); deploying changes its routes."
+    },
+    {
+      "name": "registry-delete",
+      "tools": ["Bash", "PowerShell"],
+      "pattern": "\\breg(\\.exe)?\\s+delete\\b|\\bRemove-Item(Property)?\\b[^|;]*HK(LM|CU|EY_)",
+      "reason": "Registry deletion (the Scancode Map arrow-key remap lives there)."
+    },
+    {
+      "name": "settings-json",
+      "tools": ["Write", "Edit", "MultiEdit"],
+      "pattern": "[\\\\/]\\.claude[\\\\/]settings(\\.local)?\\.json$",
+      "action": "ask",
+      "reason": "Editing Claude Code settings/permissions.",
+      "enabled": false
+    }
+  ]
+}
