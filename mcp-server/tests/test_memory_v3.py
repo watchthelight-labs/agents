@@ -26,7 +26,7 @@ def test_v2_database_upgrades_in_place_and_concurrently(tmp_path):
         con.executescript("DROP TABLE note_meta; DROP TABLE projects; DROP TABLE changes; PRAGMA user_version=2;")
     with ThreadPoolExecutor(max_workers=4) as pool:
         stores = list(pool.map(lambda _: Store(tmp_path / "db"), range(4)))
-    assert stores[0].status()["schema_version"] == 3
+    assert stores[0].status()["schema_version"] == 4
     mem = Memory(stores[0])
     assert mem.get_note(legacy["note_id"])["type"] == "runbook"
     assert mem.get_note(plain["note_id"])["type"] == "fact"
@@ -183,3 +183,24 @@ def test_short_ids_resolve(tmp_path):
     assert mem.resolve_id(saved["note_id"][:8]) == saved["note_id"]
     with pytest.raises(ValueError):
         mem.resolve_id("zz")
+
+
+def test_v3_database_upgrades_to_v4_keeping_notes(tmp_path):
+    store = Store(tmp_path / "db")
+    mem = Memory(store)
+    mem.remember("Deploy note", "Deployed 2026-10-22", "fact", surface="test")
+    with sqlite3.connect(tmp_path / "db" / "memory.sqlite3") as con:
+        con.executescript("DROP TABLE threads; DROP TABLE follows; DROP TABLE interactions; DROP TABLE thread_people; "
+                          "DROP TABLE handles; DROP TABLE people; DROP TABLE poll_runs; PRAGMA user_version=3;")
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        stores = list(pool.map(lambda _: Store(tmp_path / "db"), range(4)))
+    assert stores[0].status()["schema_version"] == 4
+    assert Memory(stores[0]).list_notes()["total"] == 1
+    with stores[0].connection() as con:
+        assert con.execute("SELECT count(*) FROM threads").fetchone()[0] == 0
+
+
+def test_mac_home_is_not_registered_as_a_project(tmp_path):
+    mem = Memory(Store(tmp_path / "db"))
+    mem.remember("Mac fact", "Something about the Mac setup", "fact", scope="project:macstuff", cwd="~", surface="test")
+    assert mem.get_project("macstuff")["path_globs"] == []

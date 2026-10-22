@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """SessionStart: inject one part of the watchthelight boot context.
 
-    wtl_boot.py profile|infra|project|threads
+    wtl_boot.py profile|infra|project|threads|people
 
-Four settings entries run in parallel, each under Claude Code's 10,000-character
+Five settings entries run in parallel, each under Claude Code's 10,000-character
 hook-output limit, so together they carry ~36k characters of memory. Each part
 is cached per folder; when the server is unreachable the cached copy is shown
 with a banner. Never blocks or fails a session.
@@ -15,7 +15,7 @@ import urllib.parse, urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import cchooks as H  # noqa: E402
 
-PARTS = ("profile", "infra", "project", "threads")
+PARTS = ("profile", "infra", "project", "threads", "people")
 WTL_DIR = os.path.join(H.STATE_DIR, "wtl")
 DEFAULT_URL = "https://mcp.watchthelight.org"
 LIMIT = 9900

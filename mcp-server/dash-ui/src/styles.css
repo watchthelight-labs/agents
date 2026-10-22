@@ -1061,3 +1061,19 @@ mark {
     animation: none !important;
   }
 }
+
+/* a button that reads as a link (thread titles in People) */
+.linklike {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--sage);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.linklike:hover {
+  color: var(--sage-bright);
+}

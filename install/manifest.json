@@ -17,6 +17,7 @@
    "hooks/turn_end.py": "claude/hooks/turn_end.py",
    "hooks/wtl_boot.py": "claude/hooks/wtl_boot.py",
    "hooks/wtl_nudge.py": "claude/hooks/wtl_nudge.py",
+   "hooks/wtl_contact_nudge.py": "claude/hooks/wtl_contact_nudge.py",
    "guardrails.json": "claude/guardrails.json",
    "statusline.py": "claude/statusline/statusline.py",
    "themes/trestle.json": "claude/themes/trestle.json",

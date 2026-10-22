@@ -117,7 +117,7 @@ def test_search_modes_filters_and_listing(tmp_path):
     assert len(page["sources"]) == 1 and page["next_cursor"]
     assert len(store.list_sources(cursor=page["next_cursor"])["sources"]) == 1
     status = store.status()
-    assert status["schema_version"] == 3 and status["ingestion_complete"] is True
+    assert status["schema_version"] == 4 and status["ingestion_complete"] is True
 
 
 def test_inbox_scrub_front_matter_and_vault_values(tmp_path, monkeypatch):

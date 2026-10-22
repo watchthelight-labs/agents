@@ -1,12 +1,13 @@
 <!-- <wtl> project: agents | file: mcp-server/README.md | author: watchthelight </wtl> -->
 # watchthelight memory server
 
-My long-term memory for AI agents, as one MCP server that every agent connects to: Claude Code on both of my operating systems, Claude on the web and phone, and ChatGPT. It holds four things:
+My long-term memory for AI agents, as one MCP server that every agent connects to: Claude Code on both of my operating systems, Claude on the web and phone, and ChatGPT. It holds five things:
 
 - **Notes:** short, dated facts, decisions, gotchas, preferences and open loops. Agents write them as they work, without being asked (see [docs/memory.md](../docs/memory.md)). Every write is versioned and can be reverted.
 - **Archive:** about 21,000 imported files (old chats, exports, docs) split into passages and searchable with SQLite FTS5. Agents cite the source and passage.
 - **Vault:** credentials encrypted with AES-256-GCM. Agents see names only, and reading a value needs a stated reason that is logged.
 - **Projects:** folders and git remotes mapped to a project, so a session started in a repo gets that project's notes at boot.
+- **Conversations:** who we talk to outside (GitHub, Discord, email, forums), where, why, and what our position is, with every message we send or receive. GitHub threads are followed: a timer checks them and puts other people's replies in an inbox and in the boot context, and threads that go quiet come back as follow-ups.
 
 Python 3.11, the official `mcp` SDK over Streamable HTTP, SQLite. One small VPS runs it behind nginx. Nothing here phones home.
 
@@ -18,6 +19,7 @@ claude.ai ───OAuth────┼──► nginx (TLS) ──► memory-mc
 ChatGPT ─────OAuth────┘                     memory-mcp dash   (127.0.0.1:8092) ──┘  (notes, archive, vault,
 browser ──Cloudflare Access──► nginx ──► dashboard SPA + /api                         oauth state)
 inbox (scp) ──► memory-mcp-import.timer (every 2 min)       memory-mcp-backup.timer (daily)
+GitHub ◄── memory-mcp-poll.timer (every 10 min, read-only token, each follow on its own cadence)
 ```
 
 - Claude Code authenticates with a static Bearer token (`MEMORY_TOKEN`).
@@ -27,9 +29,9 @@ inbox (scp) ──► memory-mcp-import.timer (every 2 min)       memory-mcp-bac
 
 ## Tools
 
-`boot`, `search_memory`, `read_source`, `list_sources`, `read_note`, `list_notes`, `remember`, `verify_note`, `archive_note`, `restore_note`, `relabel_note`, `list_changes`, `revert_change`, `list_projects`, `set_project`, `delete_note`, `forget_source`, `memory_status`, `list_credentials`, `get_credential`, `put_credential`, `delete_credential`, `credential_audit`, plus a `boot_prompt` prompt and a plain `/boot` route the Claude Code hooks use.
+`boot`, `search_memory`, `read_source`, `list_sources`, `read_note`, `list_notes`, `remember`, `verify_note`, `archive_note`, `restore_note`, `relabel_note`, `list_changes`, `revert_change`, `list_projects`, `set_project`, `delete_note`, `forget_source`, `memory_status`, `list_credentials`, `get_credential`, `put_credential`, `delete_credential`, `credential_audit`, `log_contact`, `list_threads`, `inbox`, `mark_seen`, `follow`, `set_person`, plus a `boot_prompt` prompt and a plain `/boot` route the Claude Code hooks use.
 
-The server's instructions tell every client to call `boot` first. On the next note it saves, a client gets back a receipt line ("saved: … · undo #812"), which it shows to the user.
+The server's instructions tell every client to call `boot` first. On the next note it saves, a client gets back a receipt line ("saved: ... · undo #812"), which it shows to the user.
 
 ## Setting it up
 
@@ -43,7 +45,7 @@ You need a Linux server with a public address (any small VPS), a domain, Python 
    python -c "import secrets; print(secrets.token_urlsafe(48))"                       # MEMORY_TOKEN (Claude Code)
    python -c "from memory_mcp.auth import password_hash; print(password_hash('...'))" # MEMORY_PASSWORD_HASH
    ```
-   Put them, with `MEMORY_USERNAME` and `MEMORY_DATA=/srv/memory-mcp/data`, in `memory-mcp.env`. For the dashboard add `memory-dash.env` with `CF_TEAM_DOMAIN`, `CF_ACCESS_AUD`, `OWNER_EMAIL`, `DASH_SECRET` and `DASH_ORIGINS`.
+   Put them, with `MEMORY_USERNAME` and `MEMORY_DATA=/srv/memory-mcp/data`, in `memory-mcp.env`. For the GitHub poller, create a fine-grained token with read-only access to public repositories and put it in `/etc/memory-mcp-poll.env` as `GITHUB_POLL_TOKEN`, with `GITHUB_SELF=<your login>`; the poll timer stays off until that file exists. For the dashboard add `memory-dash.env` with `CF_TEAM_DOMAIN`, `CF_ACCESS_AUD`, `OWNER_EMAIL`, `DASH_SECRET` and `DASH_ORIGINS`.
 3. **DNS.** Point both names at the server (`ops/create-dns.py` does it through Cloudflare's API).
 4. **Build and ship.** `python ops/build.py` builds the dashboard and packs `app.tar.gz`. Copy it, the two env files and `ops/install.sh` to the server, then run `sudo bash install.sh`. It does all of this:
    - creates the `memory-mcp` system user and `/srv/memory-mcp/{app,data,inbox}`;

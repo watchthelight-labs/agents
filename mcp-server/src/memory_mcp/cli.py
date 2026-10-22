@@ -101,6 +101,39 @@ def leak_scan(store, vault):
     return {"sources_with_secrets": len(leaks), "leaks": [{"source": uri, "services": sorted(v)} for uri, v in sorted(leaks.items())]}
 
 
+def seed_contacts(store, path):
+    """Load threads, people and follows from a JSON file; safe to run again (existing threads get no second message)."""
+    from .contacts import Contacts
+    from .memory import Memory
+    contacts = Contacts(store, Memory(store, load_vault(store)))
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    done = {"threads": 0, "people": 0, "follows": 0, "errors": []}
+    for p in data.get("people", []):
+        try:
+            contacts.set_person(p["handle"], p.get("display"), p.get("notes"), p.get("also"), p.get("sensitivity"), "seed")
+            done["people"] += 1
+        except (KeyError, ValueError) as exc:
+            done["errors"].append(f"person {p.get('handle')}: {exc}")
+    for t in data.get("threads", []):
+        t = dict(t)
+        with store.connection() as con:
+            exists = contacts.thread_row(con, t.get("thread_id"), t.get("url")) is not None
+        if exists and not (t.get("url") or "").count("#issuecomment-"):
+            t.pop("summary", None)
+        try:
+            contacts.log_contact(surface="seed", origin="seed", **t)
+            done["threads"] += 1
+        except (TypeError, ValueError) as exc:
+            done["errors"].append(f"thread {t.get('url') or t.get('title')}: {exc}")
+    for f in data.get("follows", []):
+        try:
+            contacts.follow(f["target"], f.get("kind"), f.get("cadence_minutes"), True, None, f.get("project"), "seed", origin="seed")
+            done["follows"] += 1
+        except (KeyError, ValueError) as exc:
+            done["errors"].append(f"follow {f.get('target')}: {exc}")
+    return done
+
+
 def main():
     parser = argparse.ArgumentParser(description="Private MCP memory archive")
     parser.add_argument("--data", type=Path, default=Path(os.environ.get("MEMORY_DATA", "data")))
@@ -125,6 +158,16 @@ def main():
     vault_sub.add_parser("list")
     vault_sub.add_parser("leak-scan", help="Report archive sources containing exact vault secrets (never prints values)")
     vault_sub.add_parser("new-key")
+    poll = sub.add_parser("poll", help="Check followed GitHub threads, repos and searches (GITHUB_POLL_TOKEN, GITHUB_SELF)")
+    poll.add_argument("--dry-run", action="store_true", help="Fetch and report, write nothing")
+    poll.add_argument("--follow", type=int, help="Check this follow id now, whether due or not")
+    poll.add_argument("--budget", type=int, default=400)
+    people = sub.add_parser("contacts")
+    people_sub = people.add_subparsers(dest="contacts_command", required=True)
+    seed = people_sub.add_parser("seed", help="Load threads, people and follows from a JSON file (idempotent)")
+    seed.add_argument("file", type=Path)
+    erase = people_sub.add_parser("forget-person", help="Erase a person and their handles (platform:handle)")
+    erase.add_argument("handle")
     args = parser.parse_args()
     if args.command == "serve":
         import uvicorn
@@ -173,6 +216,25 @@ def main():
         print(json.dumps({"created": created, "updated": updated, "failed": failed, "total": vault.count()}))
         if failed:
             sys.exit(1)
+    elif args.command == "poll":
+        from .contacts import Contacts
+        from .github_poll import GitHub, Poller
+        from .memory import Memory
+        contacts = Contacts(store, Memory(store, load_vault(store)))
+        gh = GitHub(os.environ.get("GITHUB_POLL_TOKEN", ""), budget=args.budget)
+        selfs = os.environ.get("GITHUB_SELF", "watchthelight").split(",")
+        result = Poller(contacts, gh, selfs, dry_run=args.dry_run).run(only=args.follow)
+        print(json.dumps(result, indent=2))
+        if result.get("errors") and not result.get("paused_until"):
+            sys.exit(1)
+    elif args.command == "contacts":
+        if args.contacts_command == "seed":
+            result = seed_contacts(store, args.file)
+        else:
+            from .contacts import Contacts
+            from .memory import Memory
+            result = Contacts(store, Memory(store)).forget_person(args.handle)
+        print(json.dumps(result, indent=2))
     elif args.command == "optimize":
         with store.connection() as con:
             con.execute("INSERT INTO passages(passages) VALUES ('optimize')")

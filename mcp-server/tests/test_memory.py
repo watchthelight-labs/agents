@@ -94,7 +94,9 @@ def test_auth_protocol_tools_and_host_boundary(tmp_path):
         names = {t["name"] for t in listed.json()["result"]["tools"]}
         assert names == {"boot", "search_memory", "read_source", "list_sources", "read_note", "list_notes", "remember",
                          "verify_note", "archive_note", "restore_note", "relabel_note", "list_changes", "revert_change",
-                         "list_projects", "set_project", "memory_status", "delete_note", "forget_source"}
+                         "list_projects", "set_project", "memory_status", "delete_note", "forget_source",
+                         "log_contact", "list_threads", "inbox", "mark_seen", "follow", "set_person"}
+        assert len(names) <= 30  # every tool description costs context in every client
         call = {"name": "remember", "arguments": {"title": "Chart colours", "content": "Sage green charts on black", "type": "preference"}}
         saved = client.post("/mcp", json={"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": call}, headers=headers)
         assert saved.status_code == 200

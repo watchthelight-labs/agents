@@ -1,0 +1,11 @@
+[Unit]
+Description=Check followed GitHub activity every ten minutes (each follow has its own cadence)
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=10min
+RandomizedDelaySec=60
+Unit=memory-mcp-poll.service
+
+[Install]
+WantedBy=timers.target

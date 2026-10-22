@@ -239,8 +239,66 @@ export interface NoteFilters {
   offset?: number;
 }
 
+export interface ThreadBrief {
+  thread_id: number;
+  title: string;
+  url: string | null;
+  platform: string;
+  repo: string | null;
+  number: number | null;
+  state: string;
+  remote_state: string | null;
+  why: string;
+  stance: string;
+  project: string | null;
+  unread: number;
+  people: string[];
+  last_in_at: string | null;
+  last_out_at: string | null;
+  next_check: string | null;
+  days_silent?: number | null;
+}
+
+export interface Interaction {
+  id: number;
+  direction: "in" | "out" | "note" | string;
+  kind: string;
+  author: string | null;
+  ts: string;
+  summary: string;
+  excerpt: string | null;
+  url: string | null;
+  seen_at: string | null;
+}
+
+export interface ThreadDetail {
+  thread: ThreadBrief & { id: number; tracker_ids: string[]; note_ids: string[]; sensitivity: string };
+  interactions: Interaction[];
+  people: { person_id: number; display: string; handles: string[]; notes: string }[];
+  follow: { kind: string; target: string; next_check: string; last_checked: string | null; last_error: string | null; active: number } | null;
+  notes: { note_id: string; title: string; status: string }[];
+  guidance: string;
+}
+
+export interface Inbox {
+  unread: { event_id: number; thread_id: number; title: string; url: string | null; author: string | null; ts: string; kind: string; excerpt: string | null }[];
+  waiting_on_us: ThreadBrief[];
+  due: ThreadBrief[];
+  unlogged: ThreadBrief[];
+  poller: { last_run: string | null; last_ok: string | null; rate_remaining: number | null; paused_until: string | null; last_errors: string[]; follows: number; failing_follows: number };
+  guidance: string;
+}
+
 export const api = {
   me: getMe,
+  threads: (f: { state?: string; platform?: string; project?: string; person?: string; q?: string }) =>
+    get<{ total: number; threads: ThreadBrief[] }>(`/api/threads${qs({ ...f })}`),
+  thread: (id: number) => get<ThreadDetail>(`/api/threads/${id}`),
+  updateThread: (id: number, b: { state?: string; why?: string; stance?: string; summary?: string; direction?: string }) =>
+    send<Receipt>("PATCH", `/api/threads/${id}`, b),
+  inbox: () => get<Inbox>("/api/inbox"),
+  markSeen: (b: { event_ids?: number[]; thread_id?: number; snooze_days?: number }) =>
+    send<Receipt>("POST", "/api/inbox/seen", b),
   overview: () => get<Overview>("/api/overview"),
   notes: (f: NoteFilters) =>
     get<{ total: number; notes: Note[] }>(`/api/notes${qs({ ...f })}`),

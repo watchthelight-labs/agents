@@ -1,0 +1,24 @@
+[Unit]
+Description=Check followed GitHub threads, repos and searches for replies
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=memory-mcp
+Group=memory-mcp
+Environment=MEMORY_DATA=/srv/memory-mcp/data
+EnvironmentFile=/etc/memory-mcp.env
+# The GitHub token lives only here, not in the MCP server's environment
+EnvironmentFile=/etc/memory-mcp-poll.env
+ExecStart=/srv/memory-mcp/venv/bin/memory-mcp poll
+TimeoutStartSec=10min
+Nice=10
+IOSchedulingClass=idle
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/memory-mcp/data
+MemoryMax=500M

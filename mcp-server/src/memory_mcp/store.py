@@ -13,7 +13,7 @@ import uuid
 
 EVIDENCE_TYPES = {"historical_mixed", "self_report", "preference", "project_update", "assistant_summary"}
 KINDS = {"curated", "topic", "session", "record", "reference", "index", "requests", "note"}
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS documents (
     id TEXT PRIMARY KEY, bytes INTEGER NOT NULL, chunks INTEGER NOT NULL,
@@ -77,6 +77,52 @@ CREATE TABLE IF NOT EXISTS changes (
 CREATE INDEX IF NOT EXISTS changes_ts ON changes(ts);
 CREATE INDEX IF NOT EXISTS changes_note ON changes(note_id,id);
 """
+# v4: who we talk to, where and why (threads, people, interactions) and what we follow (follows, poll_runs).
+SCHEMA_V4 = """
+CREATE TABLE IF NOT EXISTS people (
+    id INTEGER PRIMARY KEY, display TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '',
+    sensitivity TEXT NOT NULL DEFAULT 'normal', status TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS handles (
+    platform TEXT NOT NULL, handle TEXT NOT NULL, person_id INTEGER NOT NULL REFERENCES people(id), url TEXT,
+    PRIMARY KEY(platform, handle)
+);
+CREATE TABLE IF NOT EXISTS threads (
+    id INTEGER PRIMARY KEY, platform TEXT NOT NULL, external_key TEXT UNIQUE, url TEXT, repo TEXT, number INTEGER,
+    kind TEXT NOT NULL, title TEXT NOT NULL, why TEXT NOT NULL DEFAULT '', stance TEXT NOT NULL DEFAULT '',
+    state TEXT NOT NULL DEFAULT 'open', remote_state TEXT, project TEXT,
+    tracker_ids TEXT NOT NULL DEFAULT '[]', note_ids TEXT NOT NULL DEFAULT '[]',
+    sensitivity TEXT NOT NULL DEFAULT 'normal', next_check TEXT, nudge_days INTEGER NOT NULL DEFAULT 14,
+    last_in_at TEXT, last_out_at TEXT, origin TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS threads_state ON threads(state, next_check);
+CREATE TABLE IF NOT EXISTS thread_people (
+    thread_id INTEGER NOT NULL REFERENCES threads(id), person_id INTEGER NOT NULL REFERENCES people(id),
+    role TEXT NOT NULL DEFAULT 'participant', PRIMARY KEY(thread_id, person_id)
+);
+CREATE TABLE IF NOT EXISTS interactions (
+    id INTEGER PRIMARY KEY, thread_id INTEGER REFERENCES threads(id), direction TEXT NOT NULL, kind TEXT NOT NULL,
+    author TEXT, person_id INTEGER REFERENCES people(id), ts TEXT NOT NULL, summary TEXT NOT NULL DEFAULT '',
+    excerpt TEXT, url TEXT, external_id TEXT UNIQUE, origin TEXT NOT NULL, seen_at TEXT,
+    status TEXT NOT NULL DEFAULT 'active', created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS interactions_thread ON interactions(thread_id, ts);
+CREATE INDEX IF NOT EXISTS interactions_unread ON interactions(seen_at) WHERE direction='in' AND status='active';
+CREATE TABLE IF NOT EXISTS follows (
+    id INTEGER PRIMARY KEY, thread_id INTEGER REFERENCES threads(id), kind TEXT NOT NULL, target TEXT NOT NULL,
+    project TEXT, cadence_min INTEGER NOT NULL DEFAULT 30, next_check TEXT NOT NULL, last_checked TEXT,
+    etag TEXT, cursor TEXT, baseline_before TEXT, fail_count INTEGER NOT NULL DEFAULT 0, last_error TEXT,
+    active INTEGER NOT NULL DEFAULT 1, origin TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+    UNIQUE(kind, target)
+);
+CREATE INDEX IF NOT EXISTS follows_due ON follows(active, next_check);
+CREATE TABLE IF NOT EXISTS poll_runs (
+    id INTEGER PRIMARY KEY, started_at TEXT NOT NULL, finished_at TEXT, requests INTEGER NOT NULL DEFAULT 0,
+    not_modified INTEGER NOT NULL DEFAULT 0, new_events INTEGER NOT NULL DEFAULT 0, errors TEXT,
+    rate_remaining INTEGER, paused_until TEXT
+);
+"""
 NOTE_JOIN = "LEFT JOIN note_meta m ON s.kind='note' AND m.note_id=substr(s.uri,7)"
 
 
@@ -121,12 +167,12 @@ class Store:
         self.blobs.mkdir(parents=True, exist_ok=True)
         with self.connection() as con:
             version = con.execute("PRAGMA user_version").fetchone()[0]
-            if version not in (0, 1, 2, SCHEMA_VERSION):
+            if version not in (0, 1, 2, 3, SCHEMA_VERSION):
                 raise RuntimeError("Unsupported database schema")
             if version < SCHEMA_VERSION:
                 # Every statement is idempotent: several services may open the store at once.
                 con.execute("PRAGMA journal_mode=WAL")
-                con.executescript(SCHEMA + SCHEMA_V3)
+                con.executescript(SCHEMA + SCHEMA_V3 + SCHEMA_V4)
                 con.execute("BEGIN IMMEDIATE")
                 self._backfill_note_meta(con)
                 con.execute(f"PRAGMA user_version={SCHEMA_VERSION}")

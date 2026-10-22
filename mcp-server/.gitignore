@@ -8,3 +8,4 @@ private/
 *.tar.gz
 dash-ui/node_modules/
 dash-ui/dist/
+ops/seed/

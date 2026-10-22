@@ -100,7 +100,35 @@ def test_note_lifecycle_and_revert_via_api(client):
     project = client.put("/api/projects/srv10", headers=w, json={"summary": "Main ATM10 server"}).json()
     assert project["summary"] == "Main ATM10 server"
     boot = client.get("/api/boot?project=srv10", headers=h()).json()
-    assert boot["project"]["key"] == "srv10" and set(boot["parts"]) == {"profile", "project", "threads"}
+    assert boot["project"]["key"] == "srv10" and set(boot["parts"]) == {"profile", "project", "threads", "people"}
     found = client.get("/api/search?q=kelp", headers=h()).json()["results"]
     assert found and client.get(f"/api/source/{found[0]['document_id']}", headers=h()).json()["passages"]
     assert client.get("/api/nope", headers=h()).status_code == 404
+
+
+def test_people_endpoints(client, tmp_path):
+    from memory_mcp.contacts import Contacts
+    store = Store(tmp_path)
+    contacts = Contacts(store, Memory(store))
+    t = contacts.log_contact(url="https://github.com/o/r/issues/2#issuecomment-9", why="help offered", summary="answered",
+                             surface="test")
+    inbound = contacts.log_contact(thread_id=t["thread_id"], direction="in", summary="reply", who=["github:bob"], surface="test")
+    with store.connection() as con:
+        con.execute("UPDATE interactions SET seen_at=NULL WHERE id=?", (inbound["interaction_id"],))
+    csrf = client.get("/api/me", headers=h()).json()["csrf"]
+    assert client.get("/api/threads", headers=h()).json()["total"] == 1
+    detail = client.get(f"/api/threads/{t['thread_id']}", headers=h()).json()
+    assert detail["thread"]["why"] == "help offered" and len(detail["interactions"]) == 2
+    assert client.get("/api/threads/999", headers=h()).status_code == 404
+    box = client.get("/api/inbox", headers=h()).json()
+    assert [u["event_id"] for u in box["unread"]] == [inbound["interaction_id"]]
+    assert client.post("/api/inbox/seen", headers=h(write=True), json={"thread_id": t["thread_id"]}).status_code == 403
+    seen = client.post("/api/inbox/seen", headers=h(write=True, csrf=csrf), json={"thread_id": t["thread_id"]})
+    assert seen.status_code == 200 and client.get("/api/inbox", headers=h()).json()["unread"] == []
+    bad = client.patch(f"/api/threads/{t['thread_id']}", headers=h(write=True, csrf=csrf), json={"evil": 1})
+    assert bad.status_code == 400
+    closed = client.patch(f"/api/threads/{t['thread_id']}", headers=h(write=True, csrf=csrf), json={"state": "closed"})
+    assert closed.status_code == 200 and "closed" in closed.json()["receipt"]
+    assert client.get("/api/overview", headers=h()).json()["contacts"]["threads_active"] == 0
+    gone = client.post("/api/people/forget", headers=h(write=True, csrf=csrf), json={"handle": "github:bob"})
+    assert gone.status_code == 200

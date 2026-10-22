@@ -10,10 +10,12 @@ import { ChangesPage } from "./pages/Changes";
 import { ProjectsPage } from "./pages/Projects";
 import { BootPage } from "./pages/Boot";
 import { SearchPage } from "./pages/Search";
+import { PeoplePage } from "./pages/People";
 
 const NAV = [
   ["/", "Home"],
   ["/memory", "Memory"],
+  ["/people", "People"],
   ["/changes", "Changes"],
   ["/projects", "Projects"],
   ["/boot", "Boot"],
@@ -52,6 +54,7 @@ export function App() {
           <Route path="/memory" element={<MemoryPage />} />
           <Route path="/memory/new" element={<NewNotePage />} />
           <Route path="/memory/:id" element={<NotePage />} />
+          <Route path="/people" element={<PeoplePage />} />
           <Route path="/changes" element={<ChangesPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/boot" element={<BootPage />} />

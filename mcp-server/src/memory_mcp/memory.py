@@ -20,7 +20,7 @@ SENSITIVITY = ("normal", "private")
 META_FIELDS = ("title", "type", "scope", "sensitivity", "status", "pinned", "verified_at", "review_by", "supersedes")
 PROJECT_KEY = re.compile(r"[a-z0-9][a-z0-9._-]{0,63}")
 PART_LIMIT = 9200
-PARTS = ("profile", "infra", "project", "threads")
+PARTS = ("profile", "infra", "project", "threads", "people")
 STOP = set("""a an and are as at be been but by can could did do does for from had has have how i if in into is it its
 just may me more most my no not of on once only or our out over own same she should so some such than that the their
 them then there these they this those through to too under until up very was we were what when where which while who
@@ -66,11 +66,12 @@ def check_scope(scope):
 
 
 class Memory:
-    def __init__(self, store, vault=None, home_paths=("c:/users/agent", "~")):
+    def __init__(self, store, vault=None, home_paths=("c:/users/agent", "~", "~")):
         self.store = store
         self.vault = vault
         self.home_paths = {norm_path(p) for p in home_paths}
         self._secrets = (0.0, None)
+        self.contacts = None  # set by Contacts(store, memory)
 
     # ---------- helpers ----------
 
@@ -292,6 +293,12 @@ class Memory:
             later = [r[0] for r in con.execute("SELECT id FROM changes WHERE note_id=? AND id>? AND op!='delete'",
                                                 (change["note_id"], change_id))]
             row = self._row(con, change["note_id"])
+        if re.fullmatch(r"[tpf]:\d+", change["note_id"]):
+            if self.contacts is None:
+                raise ValueError("Contacts are not enabled on this server")
+            if later and not force:
+                raise ValueError(f"Later changes exist ({', '.join('#' + str(i) for i in later)}); revert those first or pass force=true")
+            return self.contacts.revert(change, surface, client_id, session)
         if row is None:
             raise ValueError("The note no longer exists")
         if later and not force:
@@ -390,10 +397,14 @@ class Memory:
             clauses.append("c.note_id=?")
             params.append(note_id)
         if not trusted:
-            clauses.append("coalesce(m.sensitivity,'normal')!='private'")
+            clauses.append("coalesce(m.sensitivity,'normal')!='private' AND coalesce(t.sensitivity,ft.sensitivity,'normal')!='private'"
+                           " AND coalesce(p.sensitivity,'normal')!='private'")
         where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+        joins = (" LEFT JOIN note_meta m ON m.note_id=c.note_id LEFT JOIN threads t ON c.note_id='t:'||t.id"
+                 " LEFT JOIN follows f ON c.note_id='f:'||f.id LEFT JOIN threads ft ON ft.id=f.thread_id"
+                 " LEFT JOIN people p ON c.note_id='p:'||p.id")
         with self.store.connection() as con:
-            rows = con.execute("SELECT c.* FROM changes c LEFT JOIN note_meta m ON m.note_id=c.note_id" + where +
+            rows = con.execute("SELECT c.* FROM changes c" + joins + where +
                                " ORDER BY c.id DESC LIMIT ?", params + [min(max(limit, 1), 500)]).fetchall()
         return {"changes": [self._change(r) for r in rows]}
 
@@ -586,6 +597,10 @@ class Memory:
             if not notes:
                 blocks.append("(no notes yet for this project)")
             return self._fit(blocks)
+        if part == "people":
+            if self.contacts is None:
+                return f"# watchthelight boot · people · {stamp}\n(contacts are not enabled on this server)"
+            return self.contacts.boot_part(stamp, self._fit)
         # threads
         loops = self._notes("type='open_loop' ORDER BY updated_at DESC")
         since = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
@@ -596,7 +611,11 @@ class Memory:
                                     GROUP BY c.note_id ORDER BY ts DESC LIMIT 60""",
                                  (since,)).fetchall()
         projects = self.list_projects()["projects"]
-        blocks = [f"# watchthelight boot · threads · {stamp}", "## Open loops"]
+        blocks = [f"# watchthelight boot · threads · {stamp}"]
+        line = self.contacts.summary_line() if self.contacts is not None else None
+        if line:
+            blocks.append(line)  # second, so _fit never drops it
+        blocks.append("## Open loops")
         blocks += [self._line(r, self._stale(r)) for r in loops] or ["(none)"]
         blocks.append("## Changed in the last 7 days")
         blocks += [f"- {r['ts'][:10]} {r['ops']}: {r['title']} [{r['type']} · {r['scope']} · {r['note_id'][:8]}]" for r in recent] or ["(nothing)"]

@@ -29,6 +29,13 @@ install -m 644 "$BASE/app/ops/memory-mcp-backup.service" /etc/systemd/system/
 install -m 644 "$BASE/app/ops/memory-mcp-backup.timer" /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable memory-mcp.service memory-mcp-import.timer memory-mcp-backup.timer
+# GitHub poller: installed always, enabled only once /etc/memory-mcp-poll.env (GITHUB_POLL_TOKEN, GITHUB_SELF) exists
+install -m 644 "$BASE/app/ops/memory-mcp-poll.service" /etc/systemd/system/
+install -m 644 "$BASE/app/ops/memory-mcp-poll.timer" /etc/systemd/system/
+systemctl daemon-reload
+if test -e /etc/memory-mcp-poll.env; then
+    systemctl enable --now memory-mcp-poll.timer
+fi
 systemctl restart memory-mcp.service
 curl -fsS --retry 10 --retry-connrefused --retry-delay 1 http://127.0.0.1:8091/healthz
 install -d -m 755 /var/lib/letsencrypt

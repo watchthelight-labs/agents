@@ -54,6 +54,9 @@ export function useInvalidate() {
       qc.invalidateQueries({ queryKey: ["notes"] });
       qc.invalidateQueries({ queryKey: ["changes"] });
       qc.invalidateQueries({ queryKey: ["projects"] });
+      qc.invalidateQueries({ queryKey: ["threads"] });
+      qc.invalidateQueries({ queryKey: ["thread"] });
+      qc.invalidateQueries({ queryKey: ["inbox"] });
       if (noteId) qc.invalidateQueries({ queryKey: ["note", noteId] });
       else qc.invalidateQueries({ queryKey: ["note"] });
     },
@@ -188,11 +191,19 @@ export function ChangeRow({
       </div>
       <div className="change-meta">
         <time className="mono small">{fmtTime(change.ts)}</time>
-        {showNote && change.note_id && (
+        {showNote && change.note_id && /^[tpf]:\d+$/.test(change.note_id) ? (
+          change.note_id.startsWith("t:") ? (
+            <Link className="mono small" to={`/people?thread=${change.note_id.slice(2)}`}>
+              {change.note_id}
+            </Link>
+          ) : (
+            <span className="mono small">{change.note_id}</span>
+          )
+        ) : showNote && change.note_id ? (
           <Link className="mono small" to={`/memory/${change.note_id}`}>
             {shortId(change.note_id)}
           </Link>
-        )}
+        ) : null}
         {(change.surface || change.client_id) && (
           <span className="muted small">
             {[change.surface, change.client_id].filter(Boolean).join(" / ")}

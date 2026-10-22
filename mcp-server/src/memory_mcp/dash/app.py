@@ -15,6 +15,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
+from ..contacts import Contacts
 from ..memory import PARTS, Memory
 from ..store import Store
 from .access import AccessError, AccessVerifier, DevVerifier, csrf_token, new_secret
@@ -31,7 +32,7 @@ def status_for(exc):
     text = str(exc).lower()
     if "conflict" in text or "later changes" in text or "already reverted" in text:
         return 409
-    if "not found" in text or "no note matches" in text or "unknown project" in text:
+    if "not found" in text or "no note matches" in text or "unknown project" in text or "no thread" in text or "no such" in text:
         return 404
     return 400
 
@@ -39,6 +40,7 @@ def status_for(exc):
 def create_dash(data_dir, verifier=None, origins=None, secret=None):
     store = Store(Path(data_dir))
     memory = Memory(store)  # No vault here: the dashboard never holds the vault key in v0b.
+    contacts = Contacts(store, memory)
     if verifier is None:
         if os.environ.get("DASH_DEV") == "1":
             verifier = DevVerifier()
@@ -91,7 +93,32 @@ def create_dash(data_dir, verifier=None, origins=None, secret=None):
                 "open_loops": memory.list_notes(type="open_loop", limit=50)["notes"],
                 "stale": memory.list_notes(stale=True, limit=50)["notes"],
                 "recent_changes": memory.list_changes(limit=20)["changes"],
-                "projects": memory.list_projects()["projects"]}
+                "projects": memory.list_projects()["projects"],
+                "contacts": contacts.counts(trusted=True)}
+
+    def threads(request, body, email):
+        return contacts.list_threads(None, None, q(request, "state", "active"), q(request, "platform"), q(request, "project"),
+                                     q(request, "person"), q(request, "q"), int(q(request, "limit", 100)))
+
+    def thread(request, body, email):
+        return contacts.list_threads(request.path_params["thread_id"])
+
+    def update_thread(request, body, email):
+        allowed = {"why", "stance", "state", "project", "title", "sensitivity", "next_check_days", "summary", "direction", "who"}
+        extra = set(body) - allowed
+        if extra:
+            raise ValueError("Unknown fields: " + ", ".join(sorted(extra)))
+        return contacts.log_contact(thread_id=request.path_params["thread_id"], surface="dashboard", client_id=email,
+                                    follow=False, **body)
+
+    def inbox(request, body, email):
+        return contacts.inbox(int(q(request, "limit", 50)), q(request, "releases") in ("1", "true"))
+
+    def seen(request, body, email):
+        return contacts.mark_seen(body.get("event_ids"), body.get("thread_id"), body.get("snooze_days"), "dashboard", email)
+
+    def forget_person(request, body, email):
+        return contacts.forget_person(body["handle"], "dashboard", email)
 
     def notes(request, body, email):
         return memory.list_notes(q(request, "type"), q(request, "scope"), q(request, "status", "active"),
@@ -177,6 +204,12 @@ def create_dash(data_dir, verifier=None, origins=None, secret=None):
         Route("/api/projects", endpoint(projects)),
         Route("/api/projects/{key}", endpoint(update_project, True), methods=["PUT"]),
         Route("/api/boot", endpoint(boot)),
+        Route("/api/threads", endpoint(threads)),
+        Route("/api/threads/{thread_id:int}", endpoint(thread), methods=["GET"]),
+        Route("/api/threads/{thread_id:int}", endpoint(update_thread, True), methods=["PATCH"]),
+        Route("/api/inbox", endpoint(inbox)),
+        Route("/api/inbox/seen", endpoint(seen, True), methods=["POST"]),
+        Route("/api/people/forget", endpoint(forget_person, True), methods=["POST"]),
         Route("/api/search", endpoint(search)),
         Route("/api/source/{document_id}", endpoint(source)),
     ]
