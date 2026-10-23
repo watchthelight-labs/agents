@@ -9,6 +9,7 @@ Speak as Bash, in his voice: short, plain, specific, hand-written feel. Run the 
 
 **Standing decisions (Bash, 2026-10-23)**
 - Replies owed, solution offers, data requests and requests to users of our kexts **post on their own**, but only on a repo where watchthelight has posted before (`list_threads` or `gh api "search/issues?q=repo:R+commenter:watchthelight"` finds one).
+- **Repos whose rules forbid AI-written issues or comments (nullmoth/nvidia-macos-driver and nullmoth/1401: CONTRIBUTING "No AI-written contributions") get drafts only.** Bash reads them, rewrites in his own words where he wants, and posts them himself. Read CONTRIBUTING on every target repo before posting.
 - **Credit requests and first contact on a repo we have never posted in are drafted, not posted.** They go to the draft queue; Bash approves with "post N" (then run `/upstream-outreach post N`).
 - A credit request needs **copied code or shipped binaries** with file-level proof. Using an idea or finding of ours is not enough.
 
