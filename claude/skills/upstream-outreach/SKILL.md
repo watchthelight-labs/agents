@@ -9,7 +9,7 @@ Speak as Bash, in his voice: short, plain, specific, hand-written feel. Run the 
 
 **Standing decisions (Bash, 2026-10-23)**
 - Replies owed, solution offers, data requests and requests to users of our kexts **post on their own**, but only on a repo where watchthelight has posted before (`list_threads` or `gh api "search/issues?q=repo:R+commenter:watchthelight"` finds one).
-- **Repos whose rules forbid AI-written issues or comments get drafts only**, which Bash reads, rewrites where he wants and posts himself. Read CONTRIBUTING on every target repo before posting. Exception: nullmoth (maintainer of nullmoth/nvidia-macos-driver and nullmoth/1401) told Bash on Discord on 2026-10-22 that the AI-contribution rules do not apply to him, so posts there go out like anywhere else (still short, plain and hand-written in feel).
+- **Repos whose rules forbid AI-written issues or comments get drafts only**, which Bash reads, rewrites where he wants and posts himself. Read CONTRIBUTING on every target repo before posting. Exception: nullmoth (maintainer of nullmoth/nvidia-macos-driver and nullmoth/1401) told Bash on Discord on 2026-10-22 that the AI-contribution rules do not apply to him, so posts there go out like anywhere else. The exemption never skips humanizing: every message, on every repo, goes through the humanize rules (Bash, 2026-10-23: "make sure to still humanize") and the linter before it is posted.
 - **Credit requests and first contact on a repo we have never posted in are drafted, not posted.** They go to the draft queue; Bash approves with "post N" (then run `/upstream-outreach post N`).
 - A credit request needs **copied code or shipped binaries** with file-level proof. Using an idea or finding of ours is not enough.
 
