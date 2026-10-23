@@ -843,10 +843,16 @@ def burn_note(rate, pct, reset_epoch, per_day=False):
 
 def autocompact_threshold(size):
     """Tokens at which Claude Code (2.1.280) auto-compacts: min(80% of the
-    window, window-13K), lowered by CLAUDE_AUTOCOMPACT_PCT_OVERRIDE if set."""
+    window, window-13K), lowered by CLAUDE_AUTOCOMPACT_PCT_OVERRIDE if set.
+    CLAUDE_CODE_AUTO_COMPACT_WINDOW caps the window the threshold is taken from."""
     if size <= 0:
         return 0
-    thr = min(size - round(size * 0.2), size - 13000)
+    try:
+        cap = int(os.environ.get("CLAUDE_CODE_AUTO_COMPACT_WINDOW") or 0)
+    except ValueError:
+        cap = 0
+    win = min(size, cap) if cap > 0 else size
+    thr = min(win - round(win * 0.2), win - 13000)
     try:
         pct = float(os.environ.get("CLAUDE_AUTOCOMPACT_PCT_OVERRIDE") or 0)
     except ValueError:

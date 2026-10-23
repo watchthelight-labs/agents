@@ -1,15 +1,17 @@
 {
- "about": "Hook and statusline wiring merged into ~/.claude/settings.json by install/install.py. {PY} becomes the Python command for the OS (python on Windows, python3 on macOS/Linux). Nothing else in settings.json is touched.",
+ "about": "Hook and statusline wiring merged into ~/.claude/settings.json by install/install.py. {PY} becomes the Python command for the OS (python on Windows, python3 on macOS/Linux). The env keys below (cost settings, 2026-10-23: compact at ~300k, 1h main cache, 5m subagent cache, Sonnet subagents) are set and env_unset keys removed; nothing else in settings.json is touched.",
+ "env": {"CLAUDE_CODE_AUTO_COMPACT_WINDOW": "375000", "CLAUDE_CODE_PROMPT_CACHE_TTL": "1h", "CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL": "5m", "CLAUDE_CODE_SUBAGENT_MODEL": "claude-sonnet-5-5"},
+ "env_unset": ["MAX_THINKING_TOKENS"],
  "statusLine": {"type": "command", "command": "PYTHONIOENCODING=utf-8 {PY} ~/.claude/statusline.py", "padding": 1},
  "hooks": {
   "SessionStart": [
    {"hooks": [{"type": "command", "command": "node ~/.claude/hooks/caveman-activate.js", "timeout": 5}]},
    {"matcher": "compact|resume", "hooks": [{"type": "command", "command": "PYTHONIOENCODING=utf-8 {PY} ~/.claude/hooks/compact_guard.py", "timeout": 10}]},
    {"matcher": "startup|clear|compact", "hooks": [{"type": "command", "command": "PYTHONIOENCODING=utf-8 {PY} ~/.claude/hooks/wtl_boot.py profile", "timeout": 8}]},
-   {"matcher": "startup|clear|compact", "hooks": [{"type": "command", "command": "PYTHONIOENCODING=utf-8 {PY} ~/.claude/hooks/wtl_boot.py infra", "timeout": 8}]},
+   {"matcher": "startup|clear", "hooks": [{"type": "command", "command": "PYTHONIOENCODING=utf-8 {PY} ~/.claude/hooks/wtl_boot.py infra", "timeout": 8}]},
    {"matcher": "startup|clear|compact", "hooks": [{"type": "command", "command": "PYTHONIOENCODING=utf-8 {PY} ~/.claude/hooks/wtl_boot.py project", "timeout": 8}]},
    {"matcher": "startup|clear|compact", "hooks": [{"type": "command", "command": "PYTHONIOENCODING=utf-8 {PY} ~/.claude/hooks/wtl_boot.py threads", "timeout": 8}]},
-   {"matcher": "startup|clear|compact", "hooks": [{"type": "command", "command": "PYTHONIOENCODING=utf-8 {PY} ~/.claude/hooks/wtl_boot.py people", "timeout": 8}]}
+   {"matcher": "startup|clear", "hooks": [{"type": "command", "command": "PYTHONIOENCODING=utf-8 {PY} ~/.claude/hooks/wtl_boot.py people", "timeout": 8}]}
   ],
   "UserPromptSubmit": [
    {"hooks": [{"type": "command", "command": "node ~/.claude/hooks/caveman-mode-tracker.js", "timeout": 5}]},

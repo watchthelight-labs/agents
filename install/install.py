@@ -5,9 +5,9 @@
   python3 install/install.py [--only skills|hooks|settings] [--dry-run] [--home PATH] [--pull]
 
 Copies claude/skills/* to ~/.claude/skills/, claude/hooks/* to ~/.claude/hooks/, the statusline, guardrails.json,
-the theme and the commands; then merges claude/settings.template.json (hook wiring and statusLine only) into
+the theme and the commands; then merges claude/settings.template.json (hook wiring, the cost env keys and statusLine) into
 ~/.claude/settings.json. Before anything changes, settings.json is copied to settings.json.bak-<time>, and a file
-that would be overwritten with different content is kept as <name>.bak. Permissions, env, MCP servers, tokens
+that would be overwritten with different content is kept as <name>.bak. Permissions, other env keys, MCP servers, tokens
 and anything else already in settings.json are left alone. Running it twice changes nothing the second time.
 
 Things it does not do (they hold secrets, see docs/new-machine.md): the watchthelight Bearer token
@@ -60,7 +60,15 @@ def merge_settings(path: Path, dry: bool) -> list:
             cmds = [h["command"] for h in g["hooks"]]
             if not any(c in commands for c in cmds):
                 have.append(g)
-    changes = [] if json.dumps(cur, sort_keys=True) == before else [f"settings.json: hook wiring and statusLine ({py_cmd()})"]
+            else:  # keep the matcher in step with the template
+                for h in have:
+                    if any(x.get("command") in cmds for x in h.get("hooks", [])) and "matcher" in g:
+                        h["matcher"] = g["matcher"]
+    env = cur.setdefault("env", {})
+    env.update(tpl.get("env", {}))
+    for k in tpl.get("env_unset", []):
+        env.pop(k, None)
+    changes = [] if json.dumps(cur, sort_keys=True) == before else [f"settings.json: hook wiring, env and statusLine ({py_cmd()})"]
     if changes and not dry:
         if path.exists():
             shutil.copy2(path, path.with_name(f"settings.json.bak-{time.strftime('%Y%m%d-%H%M%S')}"))

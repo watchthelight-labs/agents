@@ -18,7 +18,7 @@ import cchooks as H  # noqa: E402
 PARTS = ("profile", "infra", "project", "threads", "people")
 WTL_DIR = os.path.join(H.STATE_DIR, "wtl")
 DEFAULT_URL = "https://mcp.watchthelight.org"
-LIMIT = 9900
+LIMIT = 5000
 
 
 def token():
