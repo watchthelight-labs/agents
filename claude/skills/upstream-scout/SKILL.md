@@ -44,6 +44,7 @@ Run these in order, without asking, and report briefly at the end (actionable it
    - Run report `scout/reports/<date>.md`: targets and windows, actionable first, then notable, new projects with verdicts, conversations opened, answered and closed (`list_threads`), logs ingested, public edits (commit links), API calls and errors.
    - Commit and push the research repo and the project root (`research/upstream/watchlist.json`, `state.json`; never `deltas/`).
    - Report to Bash in a few lines: actionable items with links, then counts.
+   - Then run `/upstream-outreach --from-scout scout/reports/<date>.md`: it posts the replies, data requests and solution offers this run found, and queues credit requests and first contacts for Bash. Keep posting out of this skill except for credits and labs-issue notes in step 8.
 
 **Rules**
 - Public text (credits, comments, write-ups, reports): clear and human, no em dashes, no hype; say what we learned and link it. Never publish an identity: logs only through `ingest.py`, and the privacy check passes before every research-repo push.
