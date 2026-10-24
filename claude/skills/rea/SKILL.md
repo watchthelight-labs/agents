@@ -88,13 +88,15 @@ Windows C: is mounted read-only at `/Volumes/Untitled`. Copy the file out first,
 
 ## Windows session (installed 2026-10-24)
 
+**Moved 2026-10-24:** the Windows toolkit now lives in its own workspace, `C:\Users\REA`. It is not Legion: it has its own `CLAUDE.md` and watchthelight project `rea`, and each target gets a folder made with `_toolkit\bin\new-target.ps1`. Tools are in `C:\Users\REA\_toolkit\opt`, wrappers in `_toolkit\bin`, audit copies in `_toolkit\audits`, the inventory in `_toolkit\README.md`. `~/.local/bin/rea(.cmd)` only forward there. Where this section says `~/.local/opt`, read `C:\Users\REA\_toolkit\opt`. For Legion work on Windows, copy the target into the REA workspace (or a Legion evidence folder) first.
+
 Installed on the Legion's Windows side (Bash approved the full install, addon included, on 2026-10-24). Take REA only from `npm rea-agents`, `morluto/rea` or rea.tools: Windows is where the fake REA zips turn up.
 
 - Node 24.22.1 portable at `~/.local/opt/node-v24.22.1-win-x64` (zip sha256 `d2046d28c2c3dcd211ac5145c0bf30e2047ef9dfb306693c8c6e2eccd8b95fa5`, matched nodejs.org `SHASUMS256.txt`). The system Node (25.x) is outside REA's engines range, so the wrapper never uses it.
 - rea-agents 6.7.0 in `~/.local/opt/rea-agents-6.7.0` (tarball sha256 as pinned above; `npm install --ignore-scripts --omit=optional --no-audit --no-fund <tgz>`). The addon `native/windows/build/rea-windows-x64.node` matched the audit (881,284 bytes, sha256 `28e0a01f74b30232db559bf98f574be82e5c71ad36a86e4c38fe7fb448029856`).
 - Ghidra 12.1.4 at `~/.local/opt/ghidra_12.1.4_PUBLIC` (zip sha256 as pinned below). The Windows zip ships `decompile.exe`, so nothing is built. JDK: the installed Zulu 21 (`C:\Program Files\Zulu\zulu-21`). Ghidra 11.3.1 in `C:\tools` stays for the `decompile` skill.
 - Wrappers: `~/.local/bin/rea.cmd` (PowerShell, cmd, the MCP) and `~/.local/bin/rea` (Git Bash). Both set `GHIDRA_INSTALL_DIR`, `JAVA_HOME` and `REA_ANALYSIS_PROVIDER=ghidra`, and refuse `setup`, `update` and `uninstall`.
-- MCP: `claude mcp add --scope user rea -e REA_MCP_INPUT_SCHEMA_PROFILE=compact -- 'C:\Users\bash\.local\bin\rea.cmd' mcp`.
+- MCP: `claude mcp add --scope user rea -e REA_MCP_INPUT_SCHEMA_PROFILE=compact -- 'C:\Users\REA\_toolkit\bin\rea.cmd' mcp`.
 - Checked: `rea doctor --json` reports node, ghidra, the native decompiler, Java and Windows native authority healthy. Hopper, Kuna and the `rea setup` registrations show as missing, which is expected (IDA, JADX and ILSpy were added later the same day, see below). `rea analyze <copy of beep.sys> --provider ghidra --json` returned 46 procedures in about 40 s cold.
 
 Work on copies of `.sys`/`.dll` files outside `C:\Windows`; driver-store files are signed and in use, so copy, never edit. PowerShell is already Administrator here; add no elevation steps.
@@ -111,7 +113,7 @@ Bash asked for every engine REA can drive. Each has an audit in `research/reposi
 | objdump | GNU binutils 2.47 (MSYS2) | `REA_OBJDUMP_COMMAND` | `rea inspect-with-objdump <copy> file_headers`; also gives PE imports and exports, which 6.7.0 lacks natively. |
 | WASM | WABT 1.0.42 | `REA_WABT_BIN_DIRECTORY` | `rea inspect-wasm-artifact <copy>` |
 | .NET | ilspycmd 11.1.0.9782 | `REA_ILSPY_CMD_PATH` | `rea inspect-managed-artifact <copy>` |
-| Android | jadx-headless-mcp 0.7.1, Apktool 3.0.3, adb 37.0.0 (winget) | `REA_JADX_MCP_JAR`, `REA_APKTOOL_COMMAND`, `REA_ADB_PATH` | `rea inspect-android-package`, `rea decode-android-resources`, `rea list-adb-devices`. `adb kill-server` when done. |
+| Android | jadx-headless-mcp 0.7.1, Apktool 3.0.3, adb 37.0.0 (copy of the winget Platform-Tools in `opt\platform-tools-37.0.0`) | `REA_JADX_MCP_JAR`, `REA_APKTOOL_COMMAND`, `REA_ADB_PATH` | `rea inspect-android-package`, `rea decode-android-resources`, `rea list-adb-devices`. `adb kill-server` when done. |
 | Runtime | Frida 17.23.2 in the REA prefix | none | `rea list-frida-devices`, `list-frida-processes`. Never attach to system binaries, drivers or anything we did not build (hard rules above). |
 | Packets | Wireshark 4.6.9 tshark/capinfos (unpacked, no Npcap) | `REA_TSHARK_COMMAND`, `REA_CAPINFOS_COMMAND` | `rea inspect-pcap-capture <file>`. The recorded-packet and mitmdump lanes are Linux only. |
 
