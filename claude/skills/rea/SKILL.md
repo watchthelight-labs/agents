@@ -95,9 +95,27 @@ Installed on the Legion's Windows side (Bash approved the full install, addon in
 - Ghidra 12.1.4 at `~/.local/opt/ghidra_12.1.4_PUBLIC` (zip sha256 as pinned below). The Windows zip ships `decompile.exe`, so nothing is built. JDK: the installed Zulu 21 (`C:\Program Files\Zulu\zulu-21`). Ghidra 11.3.1 in `C:\tools` stays for the `decompile` skill.
 - Wrappers: `~/.local/bin/rea.cmd` (PowerShell, cmd, the MCP) and `~/.local/bin/rea` (Git Bash). Both set `GHIDRA_INSTALL_DIR`, `JAVA_HOME` and `REA_ANALYSIS_PROVIDER=ghidra`, and refuse `setup`, `update` and `uninstall`.
 - MCP: `claude mcp add --scope user rea -e REA_MCP_INPUT_SCHEMA_PROFILE=compact -- 'C:\Users\bash\.local\bin\rea.cmd' mcp`.
-- Checked: `rea doctor --json` reports node, ghidra, the native decompiler, Java and Windows native authority healthy. Hopper, IDA, jadx, Kuna and the `rea setup` registrations show as missing, which is expected. `rea analyze <copy of beep.sys> --provider ghidra --json` returned 46 procedures in about 40 s cold.
+- Checked: `rea doctor --json` reports node, ghidra, the native decompiler, Java and Windows native authority healthy. Hopper, Kuna and the `rea setup` registrations show as missing, which is expected (IDA, JADX and ILSpy were added later the same day, see below). `rea analyze <copy of beep.sys> --provider ghidra --json` returned 46 procedures in about 40 s cold.
 
 Work on copies of `.sys`/`.dll` files outside `C:\Windows`; driver-store files are signed and in use, so copy, never edit. PowerShell is already Administrator here; add no elevation steps.
+
+### Full toolkit on Windows (added 2026-10-24)
+
+Bash asked for every engine REA can drive. Each has an audit in `research/repository-audits/` and lives under `~/.local/opt`; both wrappers set the env vars, so `rea` and the MCP find them with no flags.
+
+| Lane | Tool | Env var in the wrapper | How to use |
+|---|---|---|---|
+| IDA | IDA Free 9.4 (`~/.local/opt/ida-free-9.4`, license next to `ida.exe`) + ida-free-mcp 1.1.3 (loopback patch, built on SDK 9.4.0) in `%APPDATA%\Hex-Rays\IDA Pro\plugins` | `REA_IDA_MCP_CONFIG` (`~/.local/opt/rea-ida/ida-mcp.json`, native, 127.0.0.1:13337) | Open IDA on a copy, press Ctrl-Alt-M, then `--provider ida` or `provider_id: "ida"`. Ctrl-Alt-M again to stop. IDA Free has no batch mode: `-A` and `-S` make it quit, so it can't be scripted. Its F5 is the cloud decompiler: each function goes to Hex-Rays, so nothing private or under NDA; use Ghidra for those. |
+| Rizin | Rizin 0.9.1 | `REA_RIZIN_COMMAND` | `rea execute-rizin-command <copy> iIj`. Use the `j` forms (`iIj`, `aflj`, `iij`): plain output comes back with ANSI colors. Debug sessions are Linux only. |
+| Cutter | Cutter 2.4.1 (2.5.0 can't load Python plugins on Windows, cutter#3659); REA bridge in `%APPDATA%\rizin\cutter\plugins\python` | none | `~/.local/opt/cutter-2.4.1/cutter.exe -A 0 <copy>`, then `rea list-cutter-sessions` and `rea cutter-command <id> <gen> <cmd>`. Close Cutter after. |
+| objdump | GNU binutils 2.47 (MSYS2) | `REA_OBJDUMP_COMMAND` | `rea inspect-with-objdump <copy> file_headers`; also gives PE imports and exports, which 6.7.0 lacks natively. |
+| WASM | WABT 1.0.42 | `REA_WABT_BIN_DIRECTORY` | `rea inspect-wasm-artifact <copy>` |
+| .NET | ilspycmd 11.1.0.9782 | `REA_ILSPY_CMD_PATH` | `rea inspect-managed-artifact <copy>` |
+| Android | jadx-headless-mcp 0.7.1, Apktool 3.0.3, adb 37.0.0 (winget) | `REA_JADX_MCP_JAR`, `REA_APKTOOL_COMMAND`, `REA_ADB_PATH` | `rea inspect-android-package`, `rea decode-android-resources`, `rea list-adb-devices`. `adb kill-server` when done. |
+| Runtime | Frida 17.23.2 in the REA prefix | none | `rea list-frida-devices`, `list-frida-processes`. Never attach to system binaries, drivers or anything we did not build (hard rules above). |
+| Packets | Wireshark 4.6.9 tshark/capinfos (unpacked, no Npcap) | `REA_TSHARK_COMMAND`, `REA_CAPINFOS_COMMAND` | `rea inspect-pcap-capture <file>`. The recorded-packet and mitmdump lanes are Linux only. |
+
+Not on Windows: Kuna (no Windows build), Hopper (macOS), Wakaru (installed at `~/.local/opt/wakaru-1.14.0`, but REA 6.7.0 only drives it on Linux), the NativeAOT jar, GDB, pwndbg, pwntools, Binwalk/Unblob, sigrok. JEB: no account. `rea doctor` has checks only for Ghidra, IDA, JADX, ILSpy, Hopper and Kuna; the other lanes are proven by a real call each. Its overall `healthy: false` comes from Hopper, Kuna and the `rea setup` registrations, all skipped on purpose.
 
 ## Ubuntu probe stick
 
