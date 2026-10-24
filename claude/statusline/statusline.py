@@ -841,6 +841,30 @@ def burn_note(rate, pct, reset_epoch, per_day=False):
     return note
 
 
+API_BUDGET = 200.0
+API_LEDGER = os.path.join(os.path.expanduser("~"), ".claude", "api_spend.json")
+
+
+def api_spend(data):
+    """Total fallback-key spend: highest cost seen per session, summed."""
+    sid = os.path.splitext(os.path.basename(data.get("transcript_path", "") or ""))[0] or "?"
+    cost = float((data.get("cost") or {}).get("total_cost_usd") or 0)
+    try:
+        led = json.load(open(API_LEDGER, encoding="utf-8"))
+    except Exception:
+        led = {}
+    if cost > led.get(sid, 0):
+        led[sid] = cost
+        try:
+            tmp = API_LEDGER + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(led, f)
+            os.replace(tmp, API_LEDGER)
+        except Exception:
+            pass
+    return sum(led.values())
+
+
 def autocompact_threshold(size):
     """Tokens at which Claude Code (2.1.280) auto-compacts: min(80% of the
     window, window-13K), lowered by CLAUDE_AUTOCOMPACT_PCT_OVERRIDE if set.
@@ -1004,8 +1028,16 @@ def main():
     if fab:
         meters.append(("fable", pf, reset_note(fmt_reset_7d(fab.get("resets_at", 0)))))
 
-    if p5 >= 100 or p7 >= 100 or pf >= 100:
+    on_api = bool(os.environ.get("CLAUDE_FALLBACK_API"))
+    if on_api:
+        spent = api_spend(data)
+        left = API_BUDGET - spent
+        bc = RED if left < 20 else YELLOW if left < 60 else GREEN
+        push(f"{bc}{BOLD}API{RESET} {bc}${spent:.2f}{RESET}{DIM}/${API_BUDGET:.0f}{RESET}",
+             prio=0, compact=f"{bc}{BOLD}API{RESET} {bc}${left:.0f} left{RESET}")
+    elif p5 >= 100 or p7 >= 100 or pf >= 100:
         push(f"{RED}{BOLD}{BLINK}RATE LIMITED{RESET}", prio=0)
+        push(f"{YELLOW}/exit, then claude-api{RESET}", prio=1)
 
     # ── Line 2: token throughput ───────────────────────────────────────────
     line2 = []  # same item shape; later/optional items get higher prio
