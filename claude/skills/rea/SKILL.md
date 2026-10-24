@@ -11,7 +11,7 @@ Adapted from the `reverse-engineer-anything` skill of [morluto/rea](https://gith
 
 REA is a Node CLI (`rea <command>`) with an MCP server around it. We use the CLI only, pinned to **rea-agents 6.7.0** (tarball sha256 `20958a66dba1a011e50a486beb9463a343128ed368c984f94065362c13f51f90`, npm sha512 `yhIx2ioJYYT1C/tONfYeitC6LhnKmCh+ZwRUOgYuhSc733lGhkkt73zhug9WmLgxoMdKuqIYGCoBfD4fXkOhFw==`), installed with `--ignore-scripts --omit=optional` into a private prefix. The audit is `research/repository-audits/rea.md` in the project repo.
 
-REA has **no support** for the dyld shared cache, kexts (`MH_KEXT_BUNDLE`), kernelcaches or `MH_FILESET`, or IOKit analysis. It does not resolve `/System` libraries (they live in the cache). Its native decompilation drives Ghidra, Hopper or IDA, and none is installed here (Ghidra 12.1.4 and Temurin JDK 21 are pinned in the audit but wait for Bash's OK). So REA is used for the parts it does well without a provider, and the macOS tools do the rest.
+REA has **no support** for the dyld shared cache, kexts (`MH_KEXT_BUNDLE`), kernelcaches or `MH_FILESET`, or IOKit analysis. It does not resolve `/System` libraries (they live in the cache). Its native decompilation drives Ghidra, Hopper or IDA; Ghidra 12.1.4 is installed on the Mac (2026-10-24), Hopper and IDA are not. Ghidra takes thin Mach-O slices only (`lipo -thin x86_64`). The macOS tools cover what REA cannot.
 
 | Target | Use | Note |
 |---|---|---|
@@ -45,7 +45,7 @@ Installed (user-local, no sudo):
 - `~/src/rea`: read-only shallow clone of morluto/rea at `cd1878f3fe934be403edff40e65ea20cb38ffe43` (no submodules; run nothing in it).
 - `~/.local/opt/rea-agents-6.7.0`: the pinned package. `~/.local/bin/rea` is a wrapper that blocks `setup`, `update` and `uninstall`. `rea --version` prints `6.7.0`.
 - Node 24.22.1 at `~/.local/opt/node`. System tools: `dyld_info`, `otool`, `nm`, `lldb`, `codesign`, `kmutil`, `ioreg`; MacPorts `llvm-objdump-mp-20`, `llvm-nm-mp-20`, `llvm-otool-mp-20`, `llvm-dwarfdump-mp-20` in `/opt/local/bin`.
-- No JDK, Ghidra or Hopper. Do not install them without Bash's OK.
+- Ghidra 12.1.4 at `~/.local/opt/ghidra_12.1.4_PUBLIC` and Temurin JDK 21.0.13+9 at `~/.local/opt/jdk-21.0.13+9` (both sha256 matched the pins). The zip has no macOS decompiler, so it was built from `Ghidra/Features/Decompiler/src/decompile/cpp` with `make ghidra_opt sleigh_opt` (first `mkdir com_opt com_dbg ghi_opt sla_opt ghi_dbg sla_dbg && touch */depend`, otherwise the depend step wants `bfd.h` and the link fails on missing object dirs) and copied to `Ghidra/Features/Decompiler/os/mac_x86_64/{decompile,sleigh}`. The `rea` wrapper sets `GHIDRA_INSTALL_DIR` and `JAVA_HOME`; `rea doctor` shows ghidra, the native decompiler and Java healthy. Ghidra in 6.7.0 refuses universal Mach-O files: `lipo -thin x86_64 <copy> -output <copy>.x86` first. Checked with `rea analyze <thin copy of /usr/bin/true> --provider ghidra --json`.
 
 ### Frameworks in the dyld shared cache (QuartzCore, Metal, IOKit)
 
@@ -84,7 +84,7 @@ REA has nothing for this; do it by reading:
 
 ### Windows drivers copied to this Mac
 
-Windows C: is mounted read-only at `/Volumes/Untitled`. Copy the file out first, then `rea inspect-pe-resources`, `rea inspect-artifact`, `llvm-objdump-mp-20 -p` (PE headers, import and export tables), `strings`. Decompiling a `.sys` needs a provider; wait for the Ghidra OK.
+Windows C: is mounted read-only at `/Volumes/Untitled`. Copy the file out first, then `rea inspect-pe-resources`, `rea inspect-artifact`, `llvm-objdump-mp-20 -p` (PE headers, import and export tables), `strings`. Decompile a `.sys` copy with `rea analyze <copy> --provider ghidra`.
 
 ## Windows session (PowerShell, C:\Users\Hackintosh)
 
@@ -99,16 +99,16 @@ npm install --ignore-scripts --omit=optional --no-audit --no-fund .\rea-agents-6
 node .\node_modules\rea-agents\scripts\rea.mjs --version     # 6.7.0
 ```
 
-Run it by that path (no `-g`, no `npx`, no `rea setup`). Work on copies of `.sys`/`.dll` files outside `C:\Windows`. Driver files in the driver store are signed and in use; copy, do not edit. PowerShell is already Administrator on this machine, so add no elevation steps. Windows Ghidra is REA's experimental lane; not installed.
+Run it by that path (no `-g`, no `npx`, no `rea setup`). Work on copies of `.sys`/`.dll` files outside `C:\Windows`. Driver files in the driver store are signed and in use; copy, do not edit. PowerShell is already Administrator on this machine, so add no elevation steps. Windows Ghidra is REA's experimental lane; not installed there (ask Bash first).
 
 ## Ubuntu probe stick
 
 Live USB, no persistent install. Put Node from nodejs.org (the same major as the pin allows) under `~/.local/opt`, verify its published SHA-256, then run the same `npm pack` / sha256 check / `npm install --ignore-scripts --omit=optional` into `~/.local/opt/rea-agents-6.7.0`. Use it only for PE and Mach-O files copied onto the stick. The stick is a probe: no disk writes to the laptop's partitions, no mounting the ESP read-write. Linux has `objdump`, `readelf`, `strings` and `file` for the rest.
 
-## Not installed yet (need Bash's OK, pinned in the audit)
+## Pins for other machines
 
 Ghidra 12.1.4 (sha256 `ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db`, the macOS decompiler must be built locally from its bundled source) and Temurin JDK 21.0.13+9 (sha256 `9aa1d1c17ae5467a022679e7e0af5c00797d94ac462ed1a46f4db07a8a34a6dd`). See also the `decompile` skill, which covers Ghidra and radare2 on the Windows side.
 
 ## MCP
 
-The REA MCP server is not registered. Its tool catalog is large (tens of thousands of tokens) and registering it edits `~/.claude.json`. If Bash wants it, the exact command is in `docs/rea.md` of the project repo.
+Registered at user scope (Bash, 2026-10-24): `claude mcp add --scope user rea -e REA_MCP_INPUT_SCHEMA_PROFILE=compact -- /Users/bash/.local/bin/rea mcp`. It goes through the wrapper, so the pin and the blocked commands hold. The catalog costs about 68k tokens with tool search off; with deferred tools it loads on demand. `claude mcp remove --scope user rea` takes it out. Prefer the CLI for one-off questions; the MCP suits long investigations.
