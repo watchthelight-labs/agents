@@ -86,20 +86,18 @@ REA has nothing for this; do it by reading:
 
 Windows C: is mounted read-only at `/Volumes/Untitled`. Copy the file out first, then `rea inspect-pe-resources`, `rea inspect-artifact`, `llvm-objdump-mp-20 -p` (PE headers, import and export tables), `strings`. Decompile a `.sys` copy with `rea analyze <copy> --provider ghidra`.
 
-## Windows session (PowerShell, C:\Users\Hackintosh)
+## Windows session (installed 2026-10-24)
 
-The same pinned package works there, and it is the main place the fake REA zips will turn up: take REA only from `npm rea-agents`, `morluto/rea` or rea.tools. Because the Windows package carries a prebuilt addon (`native/windows/build/rea-windows-x64.node`, MinGW-w64, not examined in the audit), ask Bash before the first Windows install.
+Installed on the Legion's Windows side (Bash approved the full install, addon included, on 2026-10-24). Take REA only from `npm rea-agents`, `morluto/rea` or rea.tools: Windows is where the fake REA zips turn up.
 
-```powershell
-node -v    # needs the range in the audit, 22.19 or newer 24.x
-mkdir $HOME\tools\rea -Force; cd $HOME\tools\rea
-npm pack rea-agents@6.7.0 --ignore-scripts
-(Get-FileHash rea-agents-6.7.0.tgz -Algorithm SHA256).Hash   # must equal 20958a66dba1a011e50a486beb9463a343128ed368c984f94065362c13f51f90
-npm install --ignore-scripts --omit=optional --no-audit --no-fund .\rea-agents-6.7.0.tgz
-node .\node_modules\rea-agents\scripts\rea.mjs --version     # 6.7.0
-```
+- Node 24.22.1 portable at `~/.local/opt/node-v24.22.1-win-x64` (zip sha256 `d2046d28c2c3dcd211ac5145c0bf30e2047ef9dfb306693c8c6e2eccd8b95fa5`, matched nodejs.org `SHASUMS256.txt`). The system Node (25.x) is outside REA's engines range, so the wrapper never uses it.
+- rea-agents 6.7.0 in `~/.local/opt/rea-agents-6.7.0` (tarball sha256 as pinned above; `npm install --ignore-scripts --omit=optional --no-audit --no-fund <tgz>`). The addon `native/windows/build/rea-windows-x64.node` matched the audit (881,284 bytes, sha256 `28e0a01f74b30232db559bf98f574be82e5c71ad36a86e4c38fe7fb448029856`).
+- Ghidra 12.1.4 at `~/.local/opt/ghidra_12.1.4_PUBLIC` (zip sha256 as pinned below). The Windows zip ships `decompile.exe`, so nothing is built. JDK: the installed Zulu 21 (`C:\Program Files\Zulu\zulu-21`). Ghidra 11.3.1 in `C:\tools` stays for the `decompile` skill.
+- Wrappers: `~/.local/bin/rea.cmd` (PowerShell, cmd, the MCP) and `~/.local/bin/rea` (Git Bash). Both set `GHIDRA_INSTALL_DIR`, `JAVA_HOME` and `REA_ANALYSIS_PROVIDER=ghidra`, and refuse `setup`, `update` and `uninstall`.
+- MCP: `claude mcp add --scope user rea -e REA_MCP_INPUT_SCHEMA_PROFILE=compact -- 'C:\Users\bash\.local\bin\rea.cmd' mcp`.
+- Checked: `rea doctor --json` reports node, ghidra, the native decompiler, Java and Windows native authority healthy. Hopper, IDA, jadx, Kuna and the `rea setup` registrations show as missing, which is expected. `rea analyze <copy of beep.sys> --provider ghidra --json` returned 46 procedures in about 40 s cold.
 
-Run it by that path (no `-g`, no `npx`, no `rea setup`). Work on copies of `.sys`/`.dll` files outside `C:\Windows`. Driver files in the driver store are signed and in use; copy, do not edit. PowerShell is already Administrator on this machine, so add no elevation steps. Windows Ghidra is REA's experimental lane; not installed there (ask Bash first).
+Work on copies of `.sys`/`.dll` files outside `C:\Windows`; driver-store files are signed and in use, so copy, never edit. PowerShell is already Administrator here; add no elevation steps.
 
 ## Ubuntu probe stick
 
@@ -111,4 +109,4 @@ Ghidra 12.1.4 (sha256 `ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd0038
 
 ## MCP
 
-Registered at user scope (Bash, 2026-10-24): `claude mcp add --scope user rea -e REA_MCP_INPUT_SCHEMA_PROFILE=compact -- /Users/bash/.local/bin/rea mcp`. It goes through the wrapper, so the pin and the blocked commands hold. The catalog costs about 68k tokens with tool search off; with deferred tools it loads on demand. `claude mcp remove --scope user rea` takes it out. Prefer the CLI for one-off questions; the MCP suits long investigations.
+Registered at user scope on both sides (Bash, 2026-10-24). macOS: `claude mcp add --scope user rea -e REA_MCP_INPUT_SCHEMA_PROFILE=compact -- /Users/bash/.local/bin/rea mcp`. It goes through the wrapper, so the pin and the blocked commands hold. The catalog costs about 68k tokens with tool search off; with deferred tools it loads on demand. `claude mcp remove --scope user rea` takes it out. Prefer the CLI for one-off questions; the MCP suits long investigations.
