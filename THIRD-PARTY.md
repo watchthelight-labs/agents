@@ -6,6 +6,7 @@
 | What | From | Licence |
 |---|---|---|
 | `claude/skills/caveman*`, `claude/hooks/caveman-*.js` | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | Apache-2.0 or MIT ([licenses/caveman-APACHE-2.0.txt](licenses/caveman-APACHE-2.0.txt)) |
+| `claude/skills/rea` (adapted from the `reverse-engineer-anything` skill) | [morluto/rea](https://github.com/morluto/rea) | MIT ([licenses/rea-MIT.txt](licenses/rea-MIT.txt)); text adapted, no REA code copied |
 | `claude/skills/whatif/assets/paged.polyfill.js` | [Paged.js](https://pagedjs.org) | MIT |
 | `claude/skills/whatif/assets/xkcd-script.ttf` | [xkcd script font](https://github.com/ipython/xkcd-font) | CC BY-NC 3.0 |
 
