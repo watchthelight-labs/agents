@@ -30,6 +30,7 @@
    "skills/caveman-review": "claude/skills/caveman-review",
    "skills/cmdlog": "claude/skills/cmdlog",
    "skills/quota": "claude/skills/quota",
+   "skills/rea": "claude/skills/rea",
    "skills/deepsearch": "claude/skills/deepsearch",
    "skills/supersearch": "claude/skills/supersearch",
    "skills/deepstorm": "claude/skills/deepstorm",
