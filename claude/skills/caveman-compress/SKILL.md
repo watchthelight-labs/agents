@@ -19,6 +19,10 @@ Compress natural language files (CLAUDE.md, todos, preferences) into caveman-spe
 
 `/caveman-compress <filepath>` or when user asks to compress a memory file.
 
+**Requires an explicit filepath.** If the user pastes raw text instead of naming a file, do NOT improvise an inline compression: ask for the filepath, or offer to save the pasted text to a file first. Never write commentary about the request into the compressed output.
+
+**Refuse secret-looking files** (`.env`, `credentials`, `secrets`, `.netrc`, key files). Do not read them.
+
 ## Process
 
 1. Read the target file
@@ -80,8 +84,8 @@ Compressed:
 
 ## Boundaries
 
-- ONLY compress natural language files (.md, .txt)
-- NEVER modify: .py, .js, .ts, .json, .yaml, .yml, .toml, .env, .lock, .css, .html
+- ONLY compress natural language files (.md, .txt, .typ, .typst, .tex, extensionless)
+- NEVER modify: .py, .js, .ts, .json, .yaml, .yml, .toml, .env, .lock, .css, .html, .xml, .sql, .sh
 - If file has mixed content (prose + code), compress ONLY prose sections
 - If unsure whether something is code or prose, leave unchanged
 - Original backed up as FILE.original.md before overwriting

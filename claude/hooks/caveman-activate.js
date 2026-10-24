@@ -1,37 +1,40 @@
 #!/usr/bin/env node
-// caveman — Claude Code SessionStart activation hook
+// caveman - Claude Code SessionStart activation hook
 //
-// Runs on every session start:
-//   1. Writes "full" to flag file at ~/.claude/.caveman-active
-//   2. Emits caveman ruleset as hidden SessionStart context
+// Runs on every SessionStart (source: startup, resume, clear, compact, fork):
+//   1. startup/clear: auto-activate at "full" for THIS session. Anything else (compact, resume,
+//      fork, unknown) keeps the mode the session already has, so a mid-session "ultra-plus" or an
+//      explicit "stop caveman" survives auto-compaction.
+//   2. Emit the active mode's ruleset as hidden SessionStart context (compaction prunes it, so it
+//      is re-emitted on every source). A session that stored "off" gets nothing.
 //
-// Vendored from https://github.com/JuliusBrussee/caveman
-// Adapted: auto-activate always, English only, no statusline nudge.
+// Vendored from https://github.com/JuliusBrussee/caveman (state design from v4.0.1).
+// Adapted: auto-activate always, English only, levels lite/full/ultra/ultra-plus, no statusline nudge,
+// no repo/user config lookup, no subagent or session-end hooks. Shared code lives in caveman-core.js.
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+const core = require('./caveman-core');
 
-const claudeDir = path.join(os.homedir(), '.claude');
-const flagPath = path.join(claudeDir, '.caveman-active');
+const RESET_SOURCES = new Set(['startup', 'clear']);
 
-// 1. Write flag file — auto-activate every session at "full"
-try {
-  fs.mkdirSync(path.dirname(flagPath), { recursive: true });
-  fs.writeFileSync(flagPath, 'full');
-} catch (e) {
-  // Silent fail — flag is best-effort, don't block the hook
-}
+core.readPayload((data, timedOut) => {
+  try {
+    const source = !timedOut && data && typeof data.source === 'string' ? data.source : (timedOut ? 'unknown' : 'startup');
+    const sid = core.validateSessionId(data && data.session_id);
 
-// 2. Emit caveman rules (always, English only)
-const output =
-  "CAVEMAN MODE ACTIVE (full). Rules: Drop articles/filler/pleasantries/hedging. " +
-  "Fragments OK. Short synonyms. Pattern: [thing] [action] [reason]. [next step]. " +
-  "Not: 'Sure! I'd be happy to help you with that.' " +
-  "Yes: 'Bug in auth middleware. Fix:' " +
-  "English only — never use wenyan or classical Chinese compression. " +
-  "Max intensity: ultra-plus (文言文 thinking, minimal English output). " +
-  "Code blocks/commits/security warnings: write normal. " +
-  "User says 'normal' or 'stop caveman' to deactivate.";
-
-process.stdout.write(output);
+    let mode;
+    if (RESET_SOURCES.has(source)) {
+      mode = core.DEFAULT_MODE;
+      core.writeMode(sid, mode);
+      if (source === 'startup') core.gcSessions();
+    } else {
+      const stored = core.readStored(sid);
+      if (stored === 'off') return;                      // user turned it off; stay off
+      mode = stored || core.DEFAULT_MODE;                // nothing stored: fresh default
+      if (!stored) core.writeMode(sid, mode);
+      if (!core.RULES[mode]) mode = core.readPrev(sid) || core.DEFAULT_MODE; // one-shot mid-flight
+    }
+    process.stdout.write(core.RULES[mode]);
+  } catch (e) {
+    // Silent fail: a hook must never block session start.
+  }
+});

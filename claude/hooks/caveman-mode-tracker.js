@@ -1,87 +1,81 @@
 #!/usr/bin/env node
-// caveman — UserPromptSubmit hook to track which caveman mode is active
-// Inspects user input for /caveman commands and writes mode to flag file.
-// Also re-emits caveman rules on EVERY turn if mode is active, so rules
-// survive context compression (the SessionStart injection gets dropped).
+// caveman - UserPromptSubmit hook to track which caveman mode is active
+// Inspects user input for /caveman commands and plain-language on/off phrases, stores the mode for
+// THIS session, and re-emits the active ruleset on EVERY turn so it survives context compression
+// and competing instructions.
 //
-// Vendored from https://github.com/JuliusBrussee/caveman
-// Adapted: wenyan commands mapped to "full" (English lock), no wenyan modes.
+// Vendored from https://github.com/JuliusBrussee/caveman (state design from v4.0.1).
+// Adapted: wenyan requests map to "full" (English lock), extra level "ultra-plus", no stats command,
+// no repo/user config lookup. Shared code lives in caveman-core.js.
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+const core = require('./caveman-core');
 
-const flagPath = path.join(os.homedir(), '.claude', '.caveman-active');
+const STOP = /\b(stop caveman|normal mode|disable caveman|deactivate caveman|caveman off)\b/;
+const START = /\b(activate caveman|turn on caveman|enable caveman|start caveman|caveman mode on|talk like (a )?caveman)\b/;
+const MAX_PHRASE_WORDS = 8; // a long prompt that merely mentions the phrase is not a command
 
-const RULES = {
-  lite: "CAVEMAN MODE ACTIVE (lite). Rules: No filler/hedging. Keep articles + full sentences. Professional but tight. Code blocks/commits/security warnings: write normal. User says 'normal' or 'stop caveman' to deactivate.",
-  full: "CAVEMAN MODE ACTIVE (full). Rules: Drop articles/filler/pleasantries/hedging. Fragments OK. Short synonyms. Pattern: [thing] [action] [reason]. [next step]. Not: 'Sure! I'd be happy to help you with that.' Yes: 'Bug in auth middleware. Fix:' English only — never use wenyan or classical Chinese compression. Max intensity: ultra-plus (文言文 thinking, minimal English output). Code blocks/commits/security warnings: write normal. User says 'normal' or 'stop caveman' to deactivate.",
-  ultra: "CAVEMAN MODE ACTIVE (ultra). Rules: Drop articles/filler/pleasantries/hedging. Fragments OK. Abbreviate (DB/auth/config/req/res/fn/impl). Strip conjunctions. Arrows for causality (X → Y). One word when one word enough. English only. Code blocks/commits/security warnings: write normal. User says 'normal' or 'stop caveman' to deactivate.",
-  'ultra-plus': "CAVEMAN MODE ACTIVE (ultra-plus). Rules: 文言文 internal reasoning → minimal English output. No sentences, no copulas. Symbols > words (→ = ∴ ≠ > <). Max abbreviation. Silence > filler. English output only. Code blocks/commits/security warnings: write normal. User says 'normal' or 'stop caveman' to deactivate.",
-};
+// Slash skills may reach the hook wrapped as <command-name>/x</command-name><command-args>y</command-args>.
+function unwrapCommand(prompt) {
+  const name = /<command-name>\s*([^<\s]+)\s*<\/command-name>/.exec(prompt);
+  if (!name) return prompt;
+  const args = /<command-args>\s*([^<]*?)\s*<\/command-args>/.exec(prompt);
+  return (name[1].startsWith('/') ? name[1] : '/' + name[1]) + (args && args[1] ? ' ' + args[1] : '');
+}
 
-let input = '';
-process.stdin.on('data', chunk => { input += chunk; });
-process.stdin.on('end', () => {
-  let deactivated = false;
-
+core.readPayload((data) => {
   try {
-    const data = JSON.parse(input);
-    const prompt = (data.prompt || '').trim().toLowerCase();
+    if (!data) return;
+    const sid = core.validateSessionId(data.session_id);
+    const prompt = unwrapCommand(String(data.prompt || data.user_prompt || '')).trim().toLowerCase();
+    const words = prompt.split(/\s+/).filter(Boolean).length;
+    let stored = core.readStored(sid);
+    let oneShotCommand = false;
 
-    // Detect deactivation via natural language (check first so it takes priority)
-    if (/\b(stop caveman|normal mode)\b/i.test(prompt)) {
-      try { fs.unlinkSync(flagPath); } catch (e) {}
-      deactivated = true;
-    }
-
-    // Match /caveman commands
-    if (!deactivated && prompt.startsWith('/caveman')) {
+    if (words <= MAX_PHRASE_WORDS && STOP.test(prompt)) {
+      core.writeMode(sid, 'off');
+    } else if (prompt.startsWith('/caveman')) {
       const parts = prompt.split(/\s+/);
       const cmd = parts[0];
       const arg = parts[1] || '';
-
       let mode = null;
 
-      if (cmd === '/caveman-commit') {
-        mode = 'commit';
-      } else if (cmd === '/caveman-review') {
-        mode = 'review';
-      } else if (cmd === '/caveman-compress' || cmd === '/caveman:caveman-compress') {
-        mode = 'compress';
-      } else if (cmd === '/caveman' || cmd === '/caveman:caveman') {
-        if (arg === 'lite') mode = 'lite';
+      if (cmd === '/caveman-commit' || cmd === '/caveman:caveman-commit') mode = 'commit';
+      else if (cmd === '/caveman-review' || cmd === '/caveman:caveman-review') mode = 'review';
+      else if (cmd === '/caveman-compress' || cmd === '/caveman:caveman-compress') mode = 'compress';
+      else if (cmd === '/caveman' || cmd === '/caveman:caveman') {
+        if (arg === 'status') {
+          // Read-only: report, change nothing, skip the ruleset.
+          process.stdout.write('Caveman mode: ' + (core.activeMode(sid) || 'off'));
+          return;
+        }
+        if (arg === 'off') { core.writeMode(sid, 'off'); stored = 'off'; }
+        else if (arg === 'lite') mode = 'lite';
         else if (arg === 'ultra-plus' || (arg === 'ultra' && parts[2] === 'plus')) mode = 'ultra-plus';
         else if (arg === 'ultra') mode = 'ultra';
-        else if (arg === 'off') {
-          // Deactivate
-          try { fs.unlinkSync(flagPath); } catch (e) {}
-          deactivated = true;
-        }
-        // English lock: wenyan requests map to full
-        else if (arg.startsWith('wenyan')) mode = 'full';
-        else mode = 'full';
+        else mode = 'full'; // includes wenyan*: English lock
       }
 
       if (mode) {
-        fs.mkdirSync(path.dirname(flagPath), { recursive: true });
-        fs.writeFileSync(flagPath, mode);
+        if (core.ONE_SHOT_MODES.includes(mode)) {
+          oneShotCommand = true;
+          if (core.PROSE_MODES.includes(stored)) core.writePrev(sid, stored); // remember what to return to
+        }
+        core.writeMode(sid, mode);
       }
+    } else if ((!stored || stored === 'off') && words <= MAX_PHRASE_WORDS && START.test(prompt)) {
+      core.writeMode(sid, core.DEFAULT_MODE);
     }
+
+    // A one-shot skill (commit/review/compress) lasts one prompt; the next ordinary prompt restores
+    // the prose mode it displaced.
+    stored = core.readStored(sid);
+    if (!oneShotCommand && core.ONE_SHOT_MODES.includes(stored)) {
+      core.writeMode(sid, core.readPrev(sid) || core.DEFAULT_MODE);
+    }
+
+    const mode = core.activeMode(sid);
+    if (mode && core.RULES[mode]) process.stdout.write(core.RULES[mode]);
   } catch (e) {
     // Silent fail on parse errors
-  }
-
-  // Re-emit caveman rules if mode is active (survives context compression)
-  if (!deactivated) {
-    try {
-      const mode = fs.readFileSync(flagPath, 'utf8').trim();
-      // Only emit rules for communication modes (not commit/review/compress sub-skills)
-      if (RULES[mode]) {
-        process.stdout.write(RULES[mode]);
-      }
-    } catch (e) {
-      // Flag file doesn't exist — caveman not active, emit nothing
-    }
   }
 });
