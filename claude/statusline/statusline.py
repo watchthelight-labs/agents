@@ -225,6 +225,28 @@ def humanize(n):
     return f"{int(n or 0):,}"
 
 
+TOK_LABEL_W = 12  # "⚇ 999 agents"
+TOK_NUM_W = 15    # "999,999,999,999": room to grow without moving a digit
+
+
+def token_lines(rows, avail):
+    """Token counts under the Working line, one row per source. Labels and
+    counts sit in fixed-width columns, right-aligned, so the digits stay put
+    as the numbers grow and rows appearing or vanishing never shift the others.
+    A terminal too narrow for the fixed columns gets them unpadded instead."""
+    out = []
+    fixed = 1 + TOK_LABEL_W + 2 * (2 + TOK_NUM_W) <= avail
+    for label, up, down, dim in rows:
+        lab, u_s, d_s = label, humanize(up), humanize(down)
+        if fixed:
+            lab, u_s, d_s = (lab.ljust(TOK_LABEL_W), u_s.rjust(TOK_NUM_W),
+                             d_s.rjust(TOK_NUM_W))
+        tone = DIM if dim else ""
+        out.append(f" {DIM}{lab}{RESET} {CYAN}{BOLD}↑{RESET}{tone}{u_s}{RESET}"
+                   f" {MAGENTA}{BOLD}↓{RESET}{tone}{d_s}{RESET}")
+    return out
+
+
 USAGE_KEYS = ("input_tokens", "cache_creation_input_tokens",
               "cache_read_input_tokens", "output_tokens")
 
@@ -1039,6 +1061,8 @@ def main():
     def push2(text, prio=1, compact=None):
         line2.append({"text": text, "prio": prio, "compact": compact})
 
+    tok_rows = []  # (label, up, down, dim): the token table under line 2
+
     if u:
         # ── now-doing: open tool call / streaming / waiting on you ────────
         recent = bool(T.get("turn_last")) and now - T["turn_last"] <= IDLE_GRACE
@@ -1059,11 +1083,7 @@ def main():
                   compact=f"{DIM}⏸{RESET}")
 
         total_up = u["fresh"] + u["cache_read"]
-        up = humanize(total_up)
-        down = humanize(u["down"])
-        push2(f"{CYAN}{BOLD}↑{RESET} {up} up  "
-              f"{MAGENTA}{BOLD}↓{RESET} {down} down", prio=0,
-              compact=f"{CYAN}{BOLD}↑{RESET}{up} {MAGENTA}{BOLD}↓{RESET}{down}")
+        tok_rows.append(("session", total_up, u["down"], False))
 
         if total_up > 0:
             hit = u["cache_read"] * 100.0 / total_up
@@ -1080,16 +1100,12 @@ def main():
             push2(txt, prio=2, compact=f"{hc}cache {int(hit)}%{RESET}")
 
         if u["last_up"] or u["last_down"]:
-            push2(f"{DIM}Δ ↑{humanize(u['last_up'])} "
-                  f"↓{humanize(u['last_down'])}{RESET}", prio=3)
+            tok_rows.append(("Δ turn", u["last_up"], u["last_down"], True))
 
         aup = u.get("agent_fresh", 0) + u.get("agent_cache_read", 0)
         adn = u.get("agent_down", 0)
         if aup or adn:
-            n = u.get("agent_n", 0)
-            push2(f"{DIM}⚇ {n} agent{'s' if n != 1 else ''} "
-                  f"↑{humanize(aup)} ↓{humanize(adn)}{RESET}", prio=3,
-                  compact=f"{DIM}⚇{n} ↑{humanize(aup)}{RESET}")
+            tok_rows.append((f"⚇ {u.get('agent_n', 0)} agents", aup, adn, True))
 
         if u.get("work_total"):
             push2(f"{YELLOW}{BOLD}⏱{RESET} {fmt_dur(u['work_total'])} work",
@@ -1135,6 +1151,7 @@ def main():
     l2 = fit_line(line2, avail, SEP)
     if l2:
         lines.append(" " + l2)
+    lines += token_lines(tok_rows, avail)
     out = "\n".join(lines)
     sys.stdout.write(out + "\n")
     sys.stdout.flush()
