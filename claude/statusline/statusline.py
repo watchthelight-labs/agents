@@ -221,14 +221,8 @@ def fpct(p):
 
 
 def humanize(n):
-    n = int(n or 0)
-    if n >= 1_000_000_000:
-        return f"{n/1_000_000_000:.2f}".rstrip("0").rstrip(".") + "B"
-    if n >= 1_000_000:
-        return f"{n/1_000_000:.1f}M".replace(".0M", "M")
-    if n >= 1_000:
-        return f"{n/1_000:.1f}K".replace(".0K", "K")
-    return str(n)
+    """Exact token count with thousands separators: 312,500."""
+    return f"{int(n or 0):,}"
 
 
 USAGE_KEYS = ("input_tokens", "cache_creation_input_tokens",
