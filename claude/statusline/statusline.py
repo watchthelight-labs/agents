@@ -230,20 +230,28 @@ TOK_NUM_W = 15    # "999,999,999,999": room to grow without moving a digit
 
 
 def token_lines(rows, avail):
-    """Token counts under the Working line, one row per source. Labels and
-    counts sit in fixed-width columns, right-aligned, so the digits stay put
-    as the numbers grow and rows appearing or vanishing never shift the others.
-    A terminal too narrow for the fixed columns gets them unpadded instead."""
+    """Token counts under the Working line, one row per source, each with
+    its total (↑ + ↓) in a Σ column, and the session total in bold last.
+    Labels and counts sit in fixed-width columns, right-aligned, so the digits
+    stay put as the numbers grow and rows appearing or vanishing never shift
+    the others. A terminal too narrow for all three columns drops the Σ
+    column first, then the padding."""
+    full = 1 + TOK_LABEL_W + 3 * (2 + TOK_NUM_W)
+    sigma = full <= avail
+    fixed = full - (2 + TOK_NUM_W) <= avail
     out = []
-    fixed = 1 + TOK_LABEL_W + 2 * (2 + TOK_NUM_W) <= avail
-    for label, up, down, dim in rows:
-        lab, u_s, d_s = label, humanize(up), humanize(down)
+    for label, up, down, style in rows:
+        lab = label.ljust(TOK_LABEL_W) if fixed else label
+        cells = [humanize(up), humanize(down), humanize(up + down)]
         if fixed:
-            lab, u_s, d_s = (lab.ljust(TOK_LABEL_W), u_s.rjust(TOK_NUM_W),
-                             d_s.rjust(TOK_NUM_W))
-        tone = DIM if dim else ""
-        out.append(f" {DIM}{lab}{RESET} {CYAN}{BOLD}↑{RESET}{tone}{u_s}{RESET}"
-                   f" {MAGENTA}{BOLD}↓{RESET}{tone}{d_s}{RESET}")
+            cells = [c.rjust(TOK_NUM_W) for c in cells]
+        tone = {"dim": DIM, "total": BOLD + WHITE}.get(style, "")
+        ltone = BOLD + WHITE if style == "total" else DIM
+        line = (f" {ltone}{lab}{RESET} {CYAN}{BOLD}↑{RESET}{tone}{cells[0]}{RESET}"
+                f" {MAGENTA}{BOLD}↓{RESET}{tone}{cells[1]}{RESET}")
+        if sigma:
+            line += f" {YELLOW}{BOLD}Σ{RESET}{tone}{cells[2]}{RESET}"
+        out.append(line)
     return out
 
 
@@ -1061,7 +1069,7 @@ def main():
     def push2(text, prio=1, compact=None):
         line2.append({"text": text, "prio": prio, "compact": compact})
 
-    tok_rows = []  # (label, up, down, dim): the token table under line 2
+    tok_rows = []  # (label, up, down, style): the token table under line 2
 
     if u:
         # ── now-doing: open tool call / streaming / waiting on you ────────
@@ -1083,7 +1091,6 @@ def main():
                   compact=f"{DIM}⏸{RESET}")
 
         total_up = u["fresh"] + u["cache_read"]
-        tok_rows.append(("session", total_up, u["down"], False))
 
         if total_up > 0:
             hit = u["cache_read"] * 100.0 / total_up
@@ -1099,13 +1106,17 @@ def main():
                     txt += f"{YELLOW} · cold, rewrites {humanize(u['last_up'])}{RESET}"
             push2(txt, prio=2, compact=f"{hc}cache {int(hit)}%{RESET}")
 
+        # The session sums include subagents, so the table shows the parts
+        # (main thread, agents) and then their total, never a part as if it
+        # were extra.
         if u["last_up"] or u["last_down"]:
-            tok_rows.append(("Δ turn", u["last_up"], u["last_down"], True))
-
+            tok_rows.append(("last turn", u["last_up"], u["last_down"], "dim"))
         aup = u.get("agent_fresh", 0) + u.get("agent_cache_read", 0)
         adn = u.get("agent_down", 0)
         if aup or adn:
-            tok_rows.append((f"⚇ {u.get('agent_n', 0)} agents", aup, adn, True))
+            tok_rows.append(("main", total_up - aup, u["down"] - adn, ""))
+            tok_rows.append((f"⚇ {u.get('agent_n', 0)} agents", aup, adn, ""))
+        tok_rows.append(("Σ session", total_up, u["down"], "total"))
 
         if u.get("work_total"):
             push2(f"{YELLOW}{BOLD}⏱{RESET} {fmt_dur(u['work_total'])} work",
