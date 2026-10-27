@@ -129,4 +129,4 @@ Ghidra 12.1.4 (sha256 `ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd0038
 
 ## MCP
 
-Registered at user scope on both sides (Bash, 2026-10-24). macOS: `claude mcp add --scope user rea -e REA_MCP_INPUT_SCHEMA_PROFILE=compact -- /Users/bash/.local/bin/rea mcp`. It goes through the wrapper, so the pin and the blocked commands hold. The catalog costs about 68k tokens with tool search off; with deferred tools it loads on demand. `claude mcp remove --scope user rea` takes it out. Prefer the CLI for one-off questions; the MCP suits long investigations.
+Registered at user scope on both sides (Bash, 2026-10-24). macOS: `claude mcp add --scope user rea -e REA_MCP_INPUT_SCHEMA_PROFILE=compact -- ~/.local/bin/rea mcp`. It goes through the wrapper, so the pin and the blocked commands hold. The catalog costs about 68k tokens with tool search off; with deferred tools it loads on demand. `claude mcp remove --scope user rea` takes it out. Prefer the CLI for one-off questions; the MCP suits long investigations.
