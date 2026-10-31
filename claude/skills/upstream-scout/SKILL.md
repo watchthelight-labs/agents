@@ -35,7 +35,7 @@ Run these in order, without asking, and report briefly at the end (actionable it
    - Every new project we learned from gets an entry in the target's credit section (`credit.heading` in the watchlist), in that section's style (`table` row or `bullets` line; follow the existing entries' wording and length). If the labs repo has no credit section yet, add `## Credits` before `## Licence`.
    - A credited project with a new capability that matters to us gets its entry updated (e.g. "internal eDP support since 0.4.0").
    - A README or docs claim the finding makes false gets corrected (status lines, "nobody has", "not possible").
-   - Mirrors in `also` get the same change (NvGfx `docs/XE.md`; for XeGfx edits also `git subtree pull --prefix gpu/xegfx https://github.com/watchthelight-labs/XeGfx.git main` in the NvGfx xe checkout).
+   - Mirrors in `also` get the same change (NvGfx `docs/XE.md`; for XeGfx edits also `git subtree pull --prefix gpu/xegfx https://github.com/watchthelight-labs/WTLIntelGfx.git main` in the NvGfx xe checkout).
    - Before each push: `python ~/.claude/skills/humanize/scripts/slop_lint.py <file>` when it exists, else `python <root>/scripts/upstream/lint_public.py <file>`; zero hard hits. Then commit, push, and set `credited: true` in the watchlist.
    - Every public commit URL goes into the report.
 9. **Finish.**
