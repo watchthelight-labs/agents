@@ -8,9 +8,9 @@ description: Talk as Bash (GitHub watchthelight) on related projects after an up
 Speak as Bash, in his voice: short, plain, specific, hand-written feel. Run the steps in order without asking, then report briefly. Same steps on Windows and macOS.
 
 **Standing decisions (Bash, 2026-10-23)**
-- Replies owed, solution offers, data requests and requests to users of our kexts **post on their own**, but only on a repo where watchthelight has posted before (`list_threads` or `gh api "search/issues?q=repo:R+commenter:watchthelight"` finds one).
+- Replies owed, solution offers, data requests, requests to users of our kexts, first contact and credit requests **all post on their own**, on any GitHub repo (Bash, 2026-11-06: "Why is anything queued for me if you can do it").
 - **Repos whose rules forbid AI-written issues or comments get drafts only**, which Bash reads, rewrites where he wants and posts himself. Read CONTRIBUTING on every target repo before posting. Exception: nullmoth (maintainer of nullmoth/nvidia-macos-driver and nullmoth/1401) told Bash on Discord on 2026-10-22 that the AI-contribution rules do not apply to him, so posts there go out like anywhere else. The exemption never skips humanizing: every message, on every repo, goes through the humanize rules (Bash, 2026-10-23: "make sure to still humanize") and the linter before it is posted.
-- **Credit requests and first contact on a repo we have never posted in are drafted, not posted.** They go to the draft queue; Bash approves with "post N" (then run `/upstream-outreach post N`).
+- **The draft queue is only for what Claude cannot send or must not send**: repos whose rules forbid AI-written posts, channels with no tool (Discord DMs, email Bash sends), and threads a note says Bash handles himself. Everything else is posted, not queued. Bash can still say "post N" for anything left in the queue.
 - A credit request needs **copied code or shipped binaries** with file-level proof. Using an idea or finding of ours is not enough.
 
 **Where things are**
@@ -40,15 +40,15 @@ Speak as Bash, in his voice: short, plain, specific, hand-written feel. Run the 
    - Translate if the thread is in another language? No: write in English, short and simple, unless the person wrote to us in English already; a one-line note in their language is fine when they clearly do not read English.
 4. **Post or queue.**
    - Write each message to `<scratch>/posts/<repo>-<n>.md`, lint it.
-   - (a) to (d) on a repo we have posted in: `gh api repos/OWNER/REPO/issues/N/comments -F body=@file --jq .html_url`. If it bears on one of our labs issues, add a one-line cross-link comment there too.
-   - (e), and any first contact: append to the draft queue `research/upstream/outreach/<date>.md` as a numbered entry (target URL, kind, why, the proof links, the exact text). Commit the queue to project-legion. Do not post.
+   - (a) to (e), on any repo whose rules allow it: comments with `gh api repos/OWNER/REPO/issues/N/comments -F body=@file --jq .html_url`, new issues (first contact, credit) with `gh issue create -R OWNER/REPO -t <title> -F file`. If it bears on one of our labs issues, add a one-line cross-link comment there too.
+   - Only what cannot go out (AI-forbidding repo, Discord or email, Bash-handled thread): append to the draft queue `research/upstream/outreach/<date>.md` as a numbered entry (target URL, kind, why, the proof links, the exact text). Commit the queue to project-legion.
    - With `--dry-run`: queue everything, post nothing.
    - To fix our own earlier comment (a wrong number, a broken link): `gh api -X PATCH repos/OWNER/REPO/issues/comments/ID -F body=@file`, and say in the report that it was edited.
 5. **Credit requests.**
    - Proof first: open the hit, find the copied files or the binary, compare with our repo (same file names and code, our bundle id, our `<wtl>` header, a release asset whose sha256 matches ours). Check their README, NOTICE, CREDITS, LICENSE and the release notes for any mention of watchthelight or the repo; a mention anywhere counts as credit.
    - Licence: our kext repos are ISC or BSD-2 (keep the copyright and licence notice); NvGfx is PolyForm Noncommercial 1.0.0 like NullMoth (keep the notices, credit NullMoth Systems and us, no commercial use). Read the repo's LICENSE before you say what it asks.
    - Text: one friendly paragraph. What we found (paths or the binary, with links), that the licence asks for the notice, and the exact line they can paste, e.g. "- [MtkWlan](https://github.com/watchthelight-labs/WTLMtkWireless) by watchthelight (ISC): MT7925 Wi-Fi driver". Thank them for using it. No threats, no deadlines.
-   - Where: an issue on their repo titled "Credit for <our project>" (first contact, so it is always a draft). A follow-up comes from the poller after 14 days; a second nudge also goes through the queue.
+   - Where: an issue on their repo titled "Credit for <our project>" (posted directly). A follow-up comes from the poller after 14 days; post one nudge, then set the thread dropped.
 6. **Record** (echo every receipt).
    - `log_contact` after each post: url (the comment link), who (`github:<login>`), why, stance, one-line summary, project (`legion-hackintosh` or the matching key), tracker_ids when an Issue or research row is involved. New threads get followed automatically; `follow` anything else worth watching (their repo's releases when they ship our kexts).
    - `set_person` for a new person we will meet again (their handle, what machine they run, which of our kexts).
