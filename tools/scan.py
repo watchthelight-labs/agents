@@ -35,8 +35,9 @@ PATTERNS = [
     (re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/-]{24,}"), "bearer token"),
     (re.compile(r"(?i)\b(?:password|passwd|secret|api[_-]?key|token)\s*[:=]\s*['\"][^'\"\s]{12,}['\"]"), "credential literal"),
     (re.compile(r"(?i)ntfy\.sh/[A-Za-z0-9_-]{6,}"), "ntfy topic"),
-    # "Hackintosh" is the Windows account that holds the project repo, not a person
-    (re.compile(r"(?i)(?:[A-Za-z]:\\\\?Users\\\\?|/Users/|/home/)(?!you\b|USER\b|agent\b|me\b|example\b|runner\b|Shared\b|Public\b|ubuntu\b|Hackintosh\b|<)[A-Za-z][\w.-]+"), "home path with a user name"),
+    # "Hackintosh" is the Windows account that holds the project repo, not a person;
+    # "REA" is the reverse engineering workspace folder, not a person either
+    (re.compile(r"(?i)(?:[A-Za-z]:\\\\?Users\\\\?|/Users/|/home/)(?!you\b|USER\b|agent\b|me\b|example\b|runner\b|Shared\b|Public\b|ubuntu\b|Hackintosh\b|REA\b|<)[A-Za-z][\w.-]+"), "home path with a user name"),
     (re.compile(r"\b\d{17,20}\b"), "long numeric id (Discord/snowflake?)"),
 ]
 IPV4 = re.compile(r"(?<![\d.])(\d{1,3}(?:\.\d{1,3}){3})(?![\d.])")
