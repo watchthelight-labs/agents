@@ -31,6 +31,7 @@ Speak as Bash, in his voice: short, plain, specific, hand-written feel. Run the 
    - (d) **our users elsewhere**: someone running our kexts writes up a problem in their own repo or another tracker. Thank them briefly, ask for the data, and point them to the matching labs issue or invite a new one.
    - (e) **credit**: a `credit_scan.py` hit, confirmed by reading the files (see step 5).
 3. **Check every message before it goes out.** Drop the candidate when any check fails, and say why in the report.
+   - First contact only: `python scripts/upstream/contacted.py check <login>` must print `new` (the list of everyone we have been in touch with is `research/upstream/contacted.json`; refresh it with `contacted.py build`, and run `contacted.py add <login> <url>` after posting).
    - `list_threads(url=...)`: we have not already said this, and we are not answering twice in a row without a reply in between (unless they asked).
    - Every claim has a link and names the build or version it was measured on. No guesses: "no answer" is a valid outcome. Confidence matches the evidence (a listing is not a switch, a build is not a boot).
    - One message per thread per run. Answer what they asked first.
